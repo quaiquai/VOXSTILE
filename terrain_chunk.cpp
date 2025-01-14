@@ -5,7 +5,7 @@
 
 #include <iostream>
 
-const int TerrainChunk::CHUNK_SIZE = 160;
+const int TerrainChunk::CHUNK_SIZE = 16;
 const int TerrainChunk::NUMBER_OF_CUBE_VERTS = 24;
 int TerrainChunk::CHUNK_COUNT = 0;
 
@@ -14,7 +14,6 @@ TerrainChunk::TerrainChunk() {
 	m_pBlocks = new Block *[CHUNK_SIZE];
 	for (int i = 0; i < CHUNK_SIZE; i++) {
 		m_pBlocks[i] = new Block [CHUNK_SIZE];
-		
 
 	}
 	//2D so 16x16 chunk grid
@@ -56,7 +55,6 @@ void TerrainChunk::create_cube(float x, float y, float z) {
 	//need to know which block we are on because the vertices array is 1D and the values change based on the position in the chunk
 	//using this number we can properly index into it for indices and other stuff
 	int baseVertexIndex = m_pBlocks[(int)x][(int)z].block_id * NUMBER_OF_CUBE_VERTS;
-	std::cout << baseVertexIndex << std::endl;
 
 	//Start of the index buffer creation. append to the end of the vector the correct order of the indices
 	// Flatten and insert vertices for each face (24 vertices total per cube)

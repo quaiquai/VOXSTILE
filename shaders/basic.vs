@@ -10,10 +10,11 @@ uniform mat4 projection;
 
 out vec3 fragmentColor;
 out vec3 v_normal;
+out vec3 fragPos;
 
 void main(){
 	gl_Position = projection * view * model * vec4(vertexPosition_modelspace, 1.0);
-
-	fragmentColor = normal;
+	fragPos = vec3(model * vec4(vertexPosition_modelspace, 1.0));
+	fragmentColor = color;
 	v_normal = normal;
 }
