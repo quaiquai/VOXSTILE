@@ -12,7 +12,7 @@ enum BlockType {
 
 static glm::vec3 block_colors[] = {
 	glm::vec3(0.5, 0.5, 0.5), //stone
-	glm::vec3(0.0, 0.7, 0.0),
+	glm::vec3(0.0, 0.7, 0.0), //grass
 };
 
 #endif // !BLOCK_TYPE_H

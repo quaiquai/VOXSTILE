@@ -1,15 +1,15 @@
 
 #include "Chunk.h"
 #include <iostream>
-#include <cstdlib>
 
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
 
-const int Chunk::CHUNK_SIZE = 16;
+#include "noise.h"
+
+const int Chunk::CHUNK_SIZE = 64;
 const int Chunk::NUMBER_OF_CUBE_VERTS = 24;
 int Chunk::CHUNK_COUNT = 0;
+
+int Chunk::block_number = 0;
 
 Chunk::Chunk() {
 	m_pBlocks = new Block **[CHUNK_SIZE];
@@ -17,47 +17,54 @@ Chunk::Chunk() {
 		m_pBlocks[i] = new Block *[CHUNK_SIZE];
 		for (int j = 0; j < CHUNK_SIZE; j++) {
 			m_pBlocks[i][j] = new Block[CHUNK_SIZE];
-			for (int k = 0; k < CHUNK_SIZE; k++) {
-				m_pBlocks[i][j][k] = Block(GRASS);
-			}
 		}
-		
 	}
-	vertices.reserve(16 * 16 * 16 * 24);
-	colors.reserve(16*16*16*24);
+	vertices.reserve(Chunk::CHUNK_SIZE * Chunk::CHUNK_SIZE * 256 * 24);
+	colors.reserve(Chunk::CHUNK_SIZE *Chunk::CHUNK_SIZE *256*24);
 	chunk_id = CHUNK_COUNT;
 	++CHUNK_COUNT;
+}
+
+float Chunk::generate_height(int x, int z) {
+	float n = Noise2D(x * 0.05, z * 0.05);
+	n += 1.0f;
+	n *= 5.0f;
+	
+	return n;
 }
 
 
 void Chunk::create_mesh() {
 	for (int x = 0; x < CHUNK_SIZE; x++) {
-		for (int y = 0; y < CHUNK_SIZE; y++) {
-			for (int z = 0; z < CHUNK_SIZE; z++) {
-				if (rand() % 2) { // Don't create triangle data for inactive blocks
+		for (int z = 0; z < CHUNK_SIZE; z++) {
+			int height = generate_height(x, z);
+			for (int y = 0; y < CHUNK_SIZE; y++) {
+				std::cout << height << std::endl;
+				if (y >= height) {
 					continue;
 				}
-				create_cube(x, y, z);
+				create_cube(x, y, z, height);
 			}
 		}
 	}
 }
 
 
-void Chunk::create_cube(int x, int y, int z) {
+void Chunk::create_cube(int x, int y, int z, int height) {
+	
 	// Create cube vertices based on block_render_size and x, y, z offsets
-	glm::vec3 p0 = { x - Block::BLOCK_RENDER_SIZE, y - Block::BLOCK_RENDER_SIZE, z + Block::BLOCK_RENDER_SIZE };
-	glm::vec3 p1 = { x + Block::BLOCK_RENDER_SIZE, y - Block::BLOCK_RENDER_SIZE, z + Block::BLOCK_RENDER_SIZE };
-	glm::vec3 p2 = { x + Block::BLOCK_RENDER_SIZE, y + Block::BLOCK_RENDER_SIZE, z + Block::BLOCK_RENDER_SIZE };
-	glm::vec3 p3 = { x - Block::BLOCK_RENDER_SIZE, y + Block::BLOCK_RENDER_SIZE, z + Block::BLOCK_RENDER_SIZE };
-	glm::vec3 p4 = { x + Block::BLOCK_RENDER_SIZE, y - Block::BLOCK_RENDER_SIZE, z - Block::BLOCK_RENDER_SIZE };
-	glm::vec3 p5 = { x - Block::BLOCK_RENDER_SIZE, y - Block::BLOCK_RENDER_SIZE, z - Block::BLOCK_RENDER_SIZE };
-	glm::vec3 p6 = { x - Block::BLOCK_RENDER_SIZE, y + Block::BLOCK_RENDER_SIZE, z - Block::BLOCK_RENDER_SIZE };
-	glm::vec3 p7 = { x + Block::BLOCK_RENDER_SIZE, y + Block::BLOCK_RENDER_SIZE, z - Block::BLOCK_RENDER_SIZE };
+	glm::vec3 p0 = { x - Block::BLOCK_RENDER_SIZE / 2.0f, y - Block::BLOCK_RENDER_SIZE / 2.0f, z + Block::BLOCK_RENDER_SIZE / 2.0f };
+	glm::vec3 p1 = { x + Block::BLOCK_RENDER_SIZE / 2.0f, y - Block::BLOCK_RENDER_SIZE / 2.0f, z + Block::BLOCK_RENDER_SIZE / 2.0f };
+	glm::vec3 p2 = { x + Block::BLOCK_RENDER_SIZE / 2.0f, y + Block::BLOCK_RENDER_SIZE / 2.0f, z + Block::BLOCK_RENDER_SIZE / 2.0f };
+	glm::vec3 p3 = { x - Block::BLOCK_RENDER_SIZE / 2.0f, y + Block::BLOCK_RENDER_SIZE / 2.0f, z + Block::BLOCK_RENDER_SIZE / 2.0f };
+	glm::vec3 p4 = { x + Block::BLOCK_RENDER_SIZE / 2.0f, y - Block::BLOCK_RENDER_SIZE / 2.0f, z - Block::BLOCK_RENDER_SIZE / 2.0f };
+	glm::vec3 p5 = { x - Block::BLOCK_RENDER_SIZE / 2.0f, y - Block::BLOCK_RENDER_SIZE / 2.0f, z - Block::BLOCK_RENDER_SIZE / 2.0f };
+	glm::vec3 p6 = { x - Block::BLOCK_RENDER_SIZE / 2.0f, y + Block::BLOCK_RENDER_SIZE / 2.0f, z - Block::BLOCK_RENDER_SIZE / 2.0f };
+	glm::vec3 p7 = { x + Block::BLOCK_RENDER_SIZE / 2.0f, y + Block::BLOCK_RENDER_SIZE / 2.0f, z - Block::BLOCK_RENDER_SIZE / 2.0f };
 
 	//need to know which block we are on because the vertices array is 1D and the values change based on the position in the chunk
 	//using this number we can properly index into it for indices and other stuff
-	int baseVertexIndex = m_pBlocks[x][y][z].block_id * NUMBER_OF_CUBE_VERTS;
+	int baseVertexIndex = block_number * NUMBER_OF_CUBE_VERTS;
 
 	//Start of the index buffer creation. append to the end of the vector the correct order of the indices
 	// Flatten and insert vertices for each face (24 vertices total per cube)
@@ -87,6 +94,9 @@ void Chunk::create_cube(int x, int y, int z) {
 									  p0.x, p0.y, p0.z }); // Bottom face
 
 	for (int i = 0; i < 24; ++i) {
+		if (y == height - 1) {
+			m_pBlocks[x][y][z].m_blockType = GRASS;
+		}
 		colors.insert(colors.end(), { block_colors[m_pBlocks[x][y][z].m_blockType].x, block_colors[m_pBlocks[x][y][z].m_blockType].y, block_colors[m_pBlocks[x][y][z].m_blockType].z });
 	}
 
@@ -147,7 +157,7 @@ void Chunk::create_cube(int x, int y, int z) {
 		baseVertexIndex + 20, baseVertexIndex + 21, baseVertexIndex + 22,
 		baseVertexIndex + 20, baseVertexIndex + 22, baseVertexIndex + 23
 	});
-
+	++block_number;
 }
 
 
