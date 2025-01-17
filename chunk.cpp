@@ -1,15 +1,30 @@
 
 #include "Chunk.h"
+#include "noise.h"
 #include <iostream>
 
 
-#include "noise.h"
-
-const int Chunk::CHUNK_SIZE = 64;
+const int Chunk::CHUNK_SIZE = 16;
 const int Chunk::NUMBER_OF_CUBE_VERTS = 24;
-int Chunk::CHUNK_COUNT = 0;
 
+int Chunk::CHUNK_COUNT = 0;
 int Chunk::block_number = 0;
+
+Chunk::Chunk(int worldx, int worldz) {
+	Chunk::chunk_world_xposition = worldx;
+	Chunk::chunk_world_zposition = worldz;
+	m_pBlocks = new Block **[CHUNK_SIZE];
+	for (int i = 0; i < CHUNK_SIZE; i++) {
+		m_pBlocks[i] = new Block *[CHUNK_SIZE];
+		for (int j = 0; j < CHUNK_SIZE; j++) {
+			m_pBlocks[i][j] = new Block[CHUNK_SIZE];
+		}
+	}
+	//vertices.reserve(Chunk::CHUNK_SIZE * Chunk::CHUNK_SIZE * 256 * 24);
+	//colors.reserve(Chunk::CHUNK_SIZE *Chunk::CHUNK_SIZE *256*24);
+	chunk_id = CHUNK_COUNT;
+	++CHUNK_COUNT;
+}
 
 Chunk::Chunk() {
 	m_pBlocks = new Block **[CHUNK_SIZE];
@@ -19,8 +34,8 @@ Chunk::Chunk() {
 			m_pBlocks[i][j] = new Block[CHUNK_SIZE];
 		}
 	}
-	vertices.reserve(Chunk::CHUNK_SIZE * Chunk::CHUNK_SIZE * 256 * 24);
-	colors.reserve(Chunk::CHUNK_SIZE *Chunk::CHUNK_SIZE *256*24);
+	//vertices.reserve(Chunk::CHUNK_SIZE * Chunk::CHUNK_SIZE * 256 * 24);
+	//colors.reserve(Chunk::CHUNK_SIZE *Chunk::CHUNK_SIZE *256*24);
 	chunk_id = CHUNK_COUNT;
 	++CHUNK_COUNT;
 }
@@ -33,34 +48,59 @@ float Chunk::generate_height(int x, int z) {
 	return n;
 }
 
-
-void Chunk::create_mesh() {
+void Chunk::remove_heights() {
 	for (int x = 0; x < CHUNK_SIZE; x++) {
 		for (int z = 0; z < CHUNK_SIZE; z++) {
 			int height = generate_height(x, z);
 			for (int y = 0; y < CHUNK_SIZE; y++) {
-				std::cout << height << std::endl;
 				if (y >= height) {
-					continue;
+					m_pBlocks[x][y][z].is_active = false;
 				}
-				create_cube(x, y, z, height);
+				if (y == height - 1) {
+					m_pBlocks[x][y][z].m_blockType = GRASS;
+				}
 			}
 		}
 	}
 }
 
 
-void Chunk::create_cube(int x, int y, int z, int height) {
+void Chunk::create_mesh() {
+	for (int x = 0; x < CHUNK_SIZE; x++) {
+		for (int z = 0; z < CHUNK_SIZE; z++) {
+			for (int y = 0; y < CHUNK_SIZE; y++) {
+				if (!(m_pBlocks[x][y][z].is_active)) {
+					continue;
+				}
+				create_cube(x, y, z);
+			}
+		}
+	}
+}
+
+
+void Chunk::create_cube(int x, int y, int z) {
+
+	//if this block is covered by other blocks, we should not render
+	if (x > 0 && x < Chunk::CHUNK_SIZE-1) {
+		if (z > 0 && z < Chunk::CHUNK_SIZE-1) {
+			if (y > 0 && y < Chunk::CHUNK_SIZE - 1) {
+				if (m_pBlocks[x + 1][y][z].is_active && m_pBlocks[x][y][z + 1].is_active && m_pBlocks[x - 1][y][z].is_active && m_pBlocks[x][y][z - 1].is_active && m_pBlocks[x][y + 1][z].is_active && m_pBlocks[x][y - 1][z].is_active) {
+					return;
+				}
+			}
+		}
+	}
 	
 	// Create cube vertices based on block_render_size and x, y, z offsets
-	glm::vec3 p0 = { x - Block::BLOCK_RENDER_SIZE / 2.0f, y - Block::BLOCK_RENDER_SIZE / 2.0f, z + Block::BLOCK_RENDER_SIZE / 2.0f };
-	glm::vec3 p1 = { x + Block::BLOCK_RENDER_SIZE / 2.0f, y - Block::BLOCK_RENDER_SIZE / 2.0f, z + Block::BLOCK_RENDER_SIZE / 2.0f };
-	glm::vec3 p2 = { x + Block::BLOCK_RENDER_SIZE / 2.0f, y + Block::BLOCK_RENDER_SIZE / 2.0f, z + Block::BLOCK_RENDER_SIZE / 2.0f };
-	glm::vec3 p3 = { x - Block::BLOCK_RENDER_SIZE / 2.0f, y + Block::BLOCK_RENDER_SIZE / 2.0f, z + Block::BLOCK_RENDER_SIZE / 2.0f };
-	glm::vec3 p4 = { x + Block::BLOCK_RENDER_SIZE / 2.0f, y - Block::BLOCK_RENDER_SIZE / 2.0f, z - Block::BLOCK_RENDER_SIZE / 2.0f };
-	glm::vec3 p5 = { x - Block::BLOCK_RENDER_SIZE / 2.0f, y - Block::BLOCK_RENDER_SIZE / 2.0f, z - Block::BLOCK_RENDER_SIZE / 2.0f };
-	glm::vec3 p6 = { x - Block::BLOCK_RENDER_SIZE / 2.0f, y + Block::BLOCK_RENDER_SIZE / 2.0f, z - Block::BLOCK_RENDER_SIZE / 2.0f };
-	glm::vec3 p7 = { x + Block::BLOCK_RENDER_SIZE / 2.0f, y + Block::BLOCK_RENDER_SIZE / 2.0f, z - Block::BLOCK_RENDER_SIZE / 2.0f };
+	glm::vec3 p0 = {(x - Block::BLOCK_RENDER_SIZE / 2.0f) + (chunk_world_xposition * Chunk::CHUNK_SIZE), y - Block::BLOCK_RENDER_SIZE / 2.0f, (z + Block::BLOCK_RENDER_SIZE / 2.0f) + (chunk_world_zposition * Chunk::CHUNK_SIZE) };
+	glm::vec3 p1 = {(x + Block::BLOCK_RENDER_SIZE / 2.0f) + (chunk_world_xposition * Chunk::CHUNK_SIZE), y - Block::BLOCK_RENDER_SIZE / 2.0f, (z + Block::BLOCK_RENDER_SIZE / 2.0f) + (chunk_world_zposition * Chunk::CHUNK_SIZE) };
+	glm::vec3 p2 = {(x + Block::BLOCK_RENDER_SIZE / 2.0f) + (chunk_world_xposition * Chunk::CHUNK_SIZE), y + Block::BLOCK_RENDER_SIZE / 2.0f, (z + Block::BLOCK_RENDER_SIZE / 2.0f) + (chunk_world_zposition * Chunk::CHUNK_SIZE) };
+	glm::vec3 p3 = {(x - Block::BLOCK_RENDER_SIZE / 2.0f) + (chunk_world_xposition * Chunk::CHUNK_SIZE), y + Block::BLOCK_RENDER_SIZE / 2.0f, (z + Block::BLOCK_RENDER_SIZE / 2.0f) + (chunk_world_zposition * Chunk::CHUNK_SIZE) };
+	glm::vec3 p4 = {(x + Block::BLOCK_RENDER_SIZE / 2.0f) + (chunk_world_xposition * Chunk::CHUNK_SIZE), y - Block::BLOCK_RENDER_SIZE / 2.0f, (z - Block::BLOCK_RENDER_SIZE / 2.0f) + (chunk_world_zposition * Chunk::CHUNK_SIZE) };
+	glm::vec3 p5 = {(x - Block::BLOCK_RENDER_SIZE / 2.0f) + (chunk_world_xposition * Chunk::CHUNK_SIZE), y - Block::BLOCK_RENDER_SIZE / 2.0f, (z - Block::BLOCK_RENDER_SIZE / 2.0f) + (chunk_world_zposition * Chunk::CHUNK_SIZE) };
+	glm::vec3 p6 = {(x - Block::BLOCK_RENDER_SIZE / 2.0f) + (chunk_world_xposition * Chunk::CHUNK_SIZE), y + Block::BLOCK_RENDER_SIZE / 2.0f, (z - Block::BLOCK_RENDER_SIZE / 2.0f) + (chunk_world_zposition * Chunk::CHUNK_SIZE) };
+	glm::vec3 p7 = {(x + Block::BLOCK_RENDER_SIZE / 2.0f) + (chunk_world_xposition * Chunk::CHUNK_SIZE), y + Block::BLOCK_RENDER_SIZE / 2.0f, (z - Block::BLOCK_RENDER_SIZE / 2.0f) + (chunk_world_zposition * Chunk::CHUNK_SIZE) };
 
 	//need to know which block we are on because the vertices array is 1D and the values change based on the position in the chunk
 	//using this number we can properly index into it for indices and other stuff
@@ -94,9 +134,6 @@ void Chunk::create_cube(int x, int y, int z, int height) {
 									  p0.x, p0.y, p0.z }); // Bottom face
 
 	for (int i = 0; i < 24; ++i) {
-		if (y == height - 1) {
-			m_pBlocks[x][y][z].m_blockType = GRASS;
-		}
 		colors.insert(colors.end(), { block_colors[m_pBlocks[x][y][z].m_blockType].x, block_colors[m_pBlocks[x][y][z].m_blockType].y, block_colors[m_pBlocks[x][y][z].m_blockType].z });
 	}
 
