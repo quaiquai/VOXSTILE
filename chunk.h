@@ -3,12 +3,13 @@
 
 #include "block.h"
 #include <vector>
+#include "glad/glad.h"
 
 class Chunk {
 
 public:
 
-	Chunk() = default;
+	Chunk();
 	Chunk(int worldx, int worldz);
 	~Chunk();
 
@@ -25,6 +26,11 @@ public:
 	int chunk_id;
 	int chunk_world_xposition;
 	int chunk_world_zposition;
+	GLuint VertexArrayID;
+	GLuint vertex_buffer;
+	GLuint normalBuffer;
+	GLuint colorBuffer;
+	GLuint IndexBuffer;
 	float generate_height(int x, int z);
 	std::vector<float> vertices;
 	std::vector<int> indices;

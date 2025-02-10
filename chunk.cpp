@@ -11,6 +11,11 @@ int Chunk::CHUNK_COUNT = 0;
 int Chunk::block_number = 0;
 
 Chunk::Chunk(int worldx, int worldz) {
+	glGenVertexArrays(1, &VertexArrayID);
+	glGenBuffers(1, &vertex_buffer);
+	glGenBuffers(1, &normalBuffer);
+	glGenBuffers(1, &colorBuffer);
+	glGenBuffers(1, &IndexBuffer);
 	Chunk::chunk_world_xposition = worldx;
 	Chunk::chunk_world_zposition = worldz;
 	m_pBlocks = new Block **[CHUNK_SIZE];
