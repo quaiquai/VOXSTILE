@@ -77,7 +77,7 @@ Chunk::Chunk() {
 float Chunk::generate_height(int x, int z) {
 	float n = Noise2D(x * 0.05, z * 0.05);
 	n += 1.0f;
-	n *= 5.0f;
+	n *= 10.0f;
 	
 	return n;
 }
@@ -85,7 +85,7 @@ float Chunk::generate_height(int x, int z) {
 void Chunk::remove_heights() {
 	for (int x = 0; x < CHUNK_SIZE; x++) {
 		for (int z = 0; z < CHUNK_SIZE; z++) {
-			int height = generate_height(x, z);
+			int height = generate_height(x + absolute_positionX, z + absolute_positionZ);
 			for (int y = 0; y < CHUNK_SIZE; y++) {
 				if (y >= height) {
 					m_pBlocks[x][y][z].is_active = false;
