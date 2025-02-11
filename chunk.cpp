@@ -18,6 +18,8 @@ Chunk::Chunk(int worldx, int worldz) {
 	glGenBuffers(1, &IndexBuffer);
 	Chunk::chunk_world_xposition = worldx;
 	Chunk::chunk_world_zposition = worldz;
+	absolute_positionX = CHUNK_SIZE * chunk_world_xposition;
+	absolute_positionZ = CHUNK_SIZE * chunk_world_zposition;
 	m_pBlocks = new Block **[CHUNK_SIZE];
 	for (int i = 0; i < CHUNK_SIZE; i++) {
 		m_pBlocks[i] = new Block *[CHUNK_SIZE];
@@ -31,7 +33,32 @@ Chunk::Chunk(int worldx, int worldz) {
 	++CHUNK_COUNT;
 }
 
+Chunk::Chunk(const Chunk &c) {
+	std::cout << "Chunk Copy Constructor" << std::endl;
+	VertexArrayID = c.VertexArrayID;
+	vertex_buffer = c.vertex_buffer;
+	normalBuffer = c.normalBuffer;
+	colorBuffer = c.colorBuffer;
+	IndexBuffer = c.IndexBuffer;
+	chunk_world_xposition = c.chunk_world_xposition;
+	chunk_world_zposition = c.chunk_world_zposition;
+	absolute_positionX = CHUNK_SIZE * chunk_world_xposition;
+	absolute_positionZ = CHUNK_SIZE * chunk_world_zposition;
+	m_pBlocks = new Block **[CHUNK_SIZE];
+	for (int i = 0; i < CHUNK_SIZE; ++i) {
+		m_pBlocks[i] = new Block *[CHUNK_SIZE];
+		for (int j = 0; j < CHUNK_SIZE; j++) {
+			m_pBlocks[i][j] = new Block[CHUNK_SIZE];
+		}
+	}
+
+	chunk_id = CHUNK_COUNT;
+	++CHUNK_COUNT;
+}
+
+/*
 Chunk::Chunk() {
+	
 	m_pBlocks = new Block **[CHUNK_SIZE];
 	for (int i = 0; i < CHUNK_SIZE; i++) {
 		m_pBlocks[i] = new Block *[CHUNK_SIZE];
@@ -43,7 +70,9 @@ Chunk::Chunk() {
 	//colors.reserve(Chunk::CHUNK_SIZE *Chunk::CHUNK_SIZE *256*24);
 	chunk_id = CHUNK_COUNT;
 	++CHUNK_COUNT;
+	
 }
+*/
 
 float Chunk::generate_height(int x, int z) {
 	float n = Noise2D(x * 0.05, z * 0.05);

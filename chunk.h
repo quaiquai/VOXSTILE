@@ -9,8 +9,9 @@ class Chunk {
 
 public:
 
-	Chunk();
+	Chunk() = default;
 	Chunk(int worldx, int worldz);
+	Chunk(const Chunk &c); //copy
 	~Chunk();
 
 	void create_mesh();
@@ -26,6 +27,8 @@ public:
 	int chunk_id;
 	int chunk_world_xposition;
 	int chunk_world_zposition;
+	int absolute_positionX;
+	int absolute_positionZ;
 	GLuint VertexArrayID;
 	GLuint vertex_buffer;
 	GLuint normalBuffer;

@@ -10,7 +10,7 @@ class ChunkManager {
 
 public:
 
-	std::vector<Chunk*> chunks;
+	std::vector<Chunk> chunks;
 	ChunkManager();
 	void generate_chunks();
 	void render_chunks();
