@@ -8,7 +8,6 @@ const int Chunk::CHUNK_SIZE = 16;
 const int Chunk::NUMBER_OF_CUBE_VERTS = 24;
 
 int Chunk::CHUNK_COUNT = 0;
-int Chunk::block_number = 0;
 
 Chunk::Chunk(int worldx, int worldz) {
 	glGenVertexArrays(1, &VertexArrayID);
@@ -27,6 +26,7 @@ Chunk::Chunk(int worldx, int worldz) {
 			m_pBlocks[i][j] = new Block[CHUNK_SIZE];
 		}
 	}
+	block_number = 0;
 	//vertices.reserve(Chunk::CHUNK_SIZE * Chunk::CHUNK_SIZE * 256 * 24);
 	//colors.reserve(Chunk::CHUNK_SIZE *Chunk::CHUNK_SIZE *256*24);
 	chunk_id = CHUNK_COUNT;
@@ -51,7 +51,7 @@ Chunk::Chunk(const Chunk &c) {
 			m_pBlocks[i][j] = new Block[CHUNK_SIZE];
 		}
 	}
-
+	block_number = 0;
 	chunk_id = CHUNK_COUNT;
 	++CHUNK_COUNT;
 }

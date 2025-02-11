@@ -21,7 +21,7 @@ public:
 	static const int CHUNK_SIZE;
 	static const int NUMBER_OF_CUBE_VERTS;
 	static int CHUNK_COUNT;
-	static int block_number;
+	int block_number;
 	Block ***m_pBlocks;
 
 	int chunk_id;
