@@ -34,7 +34,6 @@ Chunk::Chunk(int worldx, int worldz) {
 }
 
 Chunk::Chunk(const Chunk &c) {
-	std::cout << "Chunk Copy Constructor" << std::endl;
 	VertexArrayID = c.VertexArrayID;
 	vertex_buffer = c.vertex_buffer;
 	normalBuffer = c.normalBuffer;
@@ -45,34 +44,73 @@ Chunk::Chunk(const Chunk &c) {
 	absolute_positionX = CHUNK_SIZE * chunk_world_xposition;
 	absolute_positionZ = CHUNK_SIZE * chunk_world_zposition;
 	m_pBlocks = new Block **[CHUNK_SIZE];
+	m_pBlocks = new Block **[CHUNK_SIZE];
 	for (int i = 0; i < CHUNK_SIZE; ++i) {
 		m_pBlocks[i] = new Block *[CHUNK_SIZE];
 		for (int j = 0; j < CHUNK_SIZE; j++) {
 			m_pBlocks[i][j] = new Block[CHUNK_SIZE];
+			for (int k = 0; k < CHUNK_SIZE; k++) {
+				m_pBlocks[i][j][k] = c.m_pBlocks[i][j][k]; // Copy each Block
+			}
 		}
 	}
-	block_number = 0;
-	chunk_id = CHUNK_COUNT;
-	++CHUNK_COUNT;
+	block_number = c.block_number;
+	chunk_id = c.chunk_id;
 }
 
-/*
-Chunk::Chunk() {
-	
-	m_pBlocks = new Block **[CHUNK_SIZE];
-	for (int i = 0; i < CHUNK_SIZE; i++) {
-		m_pBlocks[i] = new Block *[CHUNK_SIZE];
-		for (int j = 0; j < CHUNK_SIZE; j++) {
-			m_pBlocks[i][j] = new Block[CHUNK_SIZE];
-		}
-	}
-	//vertices.reserve(Chunk::CHUNK_SIZE * Chunk::CHUNK_SIZE * 256 * 24);
-	//colors.reserve(Chunk::CHUNK_SIZE *Chunk::CHUNK_SIZE *256*24);
-	chunk_id = CHUNK_COUNT;
-	++CHUNK_COUNT;
-	
+Chunk::Chunk(Chunk&& other) noexcept
+	: VertexArrayID(other.VertexArrayID),
+	vertex_buffer(other.vertex_buffer),
+	normalBuffer(other.normalBuffer),
+	colorBuffer(other.colorBuffer),
+	IndexBuffer(other.IndexBuffer),
+	chunk_world_xposition(other.chunk_world_xposition),
+	chunk_world_zposition(other.chunk_world_zposition),
+	absolute_positionX(other.absolute_positionX),
+	absolute_positionZ(other.absolute_positionZ),
+	m_pBlocks(other.m_pBlocks), // Move ownership of dynamic array
+	block_number(other.block_number),
+	chunk_id(other.chunk_id),
+	vertices(std::move(other.vertices)),
+	colors(std::move(other.colors)),
+	normals(std::move(other.normals)),
+	indices(std::move(other.indices)) {
+
+	// Invalidate other's resources to prevent double deletion
+	other.m_pBlocks = nullptr;
 }
-*/
+
+Chunk& Chunk::operator=(Chunk&& other) noexcept {
+	if (this != &other) {  // Prevent self-assignment
+						   // Free existing dynamically allocated resources
+		delete[] m_pBlocks;
+
+		// Move data from `other`
+		VertexArrayID = other.VertexArrayID;
+		vertex_buffer = other.vertex_buffer;
+		normalBuffer = other.normalBuffer;
+		colorBuffer = other.colorBuffer;
+		IndexBuffer = other.IndexBuffer;
+		chunk_world_xposition = other.chunk_world_xposition;
+		chunk_world_zposition = other.chunk_world_zposition;
+		absolute_positionX = other.absolute_positionX;
+		absolute_positionZ = other.absolute_positionZ;
+		block_number = other.block_number;
+		chunk_id = other.chunk_id;
+
+		// Move ownership of dynamically allocated array
+		m_pBlocks = other.m_pBlocks;
+		other.m_pBlocks = nullptr; // Ensure the moved-from object is safe
+
+								   // Move STL containers
+		vertices = std::move(other.vertices);
+		colors = std::move(other.colors);
+		normals = std::move(other.normals);
+		indices = std::move(other.indices);
+	}
+	return *this;
+}
+
 
 float Chunk::generate_height(int x, int z) {
 	float n = Noise2D(x * 0.05, z * 0.05);
@@ -233,6 +271,7 @@ void Chunk::create_cube(int x, int y, int z) {
 
 
 Chunk::~Chunk() { // Delete the blocks
+	if (!m_pBlocks) return;
 	for (int i = 0; i < CHUNK_SIZE; ++i) {
 		for (int j = 0; j < CHUNK_SIZE; ++j) {
 			delete[] m_pBlocks[i][j];
@@ -240,4 +279,5 @@ Chunk::~Chunk() { // Delete the blocks
 		delete[] m_pBlocks[i];
 	}
 	delete[] m_pBlocks;
+	m_pBlocks = nullptr;
 }

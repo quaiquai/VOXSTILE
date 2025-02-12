@@ -4,6 +4,7 @@
 #include "block.h"
 #include <vector>
 #include "glad/glad.h"
+#include <iostream>
 
 class Chunk {
 
@@ -12,6 +13,8 @@ public:
 	Chunk() = default;
 	Chunk(int worldx, int worldz);
 	Chunk(const Chunk &c); //copy
+	Chunk(Chunk &&other) noexcept;
+	Chunk& operator=(Chunk&& other) noexcept;
 	~Chunk();
 
 	void create_mesh();
