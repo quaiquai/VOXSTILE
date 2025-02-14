@@ -19,6 +19,7 @@ Block::Block(BlockType type) {
 
 Block::Block(float size) {
 
+	/*
 	vertices = {
 		-size,-size,-size, // triangle 1 : begin
 		-size,-size, size,
@@ -58,6 +59,9 @@ Block::Block(float size) {
 		size,-size, size
 	};
 
+	*/
+
+	/*
 	colors = {
 		0.583f,  0.771f,  0.014f,
 		0.609f,  0.115f,  0.436f,
@@ -96,11 +100,13 @@ Block::Block(float size) {
 		0.820f,  0.883f,  0.371f,
 		0.982f,  0.099f,  0.879f
 	};
+	*/
 
 }
 
 void Block::create_verts(float size) {
 
+	/*
 	vertices = {
 		-size,-size,-size, // triangle 1 : begin
 		-size,-size, size,
@@ -139,4 +145,5 @@ void Block::create_verts(float size) {
 		-size, size, size,
 		size,-size, size
 	};
+	*/
 }

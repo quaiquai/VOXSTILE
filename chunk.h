@@ -18,7 +18,7 @@ public:
 	~Chunk();
 
 	void create_mesh();
-	void create_cube(int x, int y, int z);
+	void create_cube(int x, int y, int z, int height);
 	void remove_heights();
 
 	static const int CHUNK_SIZE;

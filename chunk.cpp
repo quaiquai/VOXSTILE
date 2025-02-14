@@ -44,7 +44,6 @@ Chunk::Chunk(const Chunk &c) {
 	absolute_positionX = CHUNK_SIZE * chunk_world_xposition;
 	absolute_positionZ = CHUNK_SIZE * chunk_world_zposition;
 	m_pBlocks = new Block **[CHUNK_SIZE];
-	m_pBlocks = new Block **[CHUNK_SIZE];
 	for (int i = 0; i < CHUNK_SIZE; ++i) {
 		m_pBlocks[i] = new Block *[CHUNK_SIZE];
 		for (int j = 0; j < CHUNK_SIZE; j++) {
@@ -54,6 +53,10 @@ Chunk::Chunk(const Chunk &c) {
 			}
 		}
 	}
+	vertices = c.vertices;
+	colors = c.colors;
+	normals = c.normals;
+	indices = c.indices;
 	block_number = c.block_number;
 	chunk_id = c.chunk_id;
 }
@@ -125,12 +128,18 @@ void Chunk::remove_heights() {
 		for (int z = 0; z < CHUNK_SIZE; z++) {
 			int height = generate_height(x + absolute_positionX, z + absolute_positionZ);
 			for (int y = 0; y < CHUNK_SIZE; y++) {
-				if (y >= height) {
-					m_pBlocks[x][y][z].is_active = false;
-				}
+				
+				
 				if (y == height - 1) {
 					m_pBlocks[x][y][z].m_blockType = GRASS;
 				}
+				if (y >= height) {
+					m_pBlocks[x][y][z].is_active = false;
+				}
+				else {
+					create_cube(x, y, z, height);
+				}
+				
 			}
 		}
 	}
@@ -144,25 +153,25 @@ void Chunk::create_mesh() {
 				if (!(m_pBlocks[x][y][z].is_active)) {
 					continue;
 				}
-				create_cube(x, y, z);
+				//create_cube(x, y, z);
 			}
 		}
 	}
 }
 
 
-void Chunk::create_cube(int x, int y, int z) {
+void Chunk::create_cube(int x, int y, int z, int height) {
 
 	//if this block is covered by other blocks, we should not render
-	if (x > 0 && x < Chunk::CHUNK_SIZE-1) {
-		if (z > 0 && z < Chunk::CHUNK_SIZE-1) {
-			if (y > 0 && y < Chunk::CHUNK_SIZE - 1) {
-				if (m_pBlocks[x + 1][y][z].is_active && m_pBlocks[x][y][z + 1].is_active && m_pBlocks[x - 1][y][z].is_active && m_pBlocks[x][y][z - 1].is_active && m_pBlocks[x][y + 1][z].is_active && m_pBlocks[x][y - 1][z].is_active) {
+	//if (x > 0 && x < Chunk::CHUNK_SIZE-1) {
+		//if (z > 0 && z < Chunk::CHUNK_SIZE-1) {
+			if (y >= 0 && y < Chunk::CHUNK_SIZE - 1 && y < height-1) {
+				//if (m_pBlocks[x + 1][y][z].is_active && m_pBlocks[x][y][z + 1].is_active && m_pBlocks[x - 1][y][z].is_active && m_pBlocks[x][y][z - 1].is_active && m_pBlocks[x][y + 1][z].is_active && m_pBlocks[x][y - 1][z].is_active) {
 					return;
-				}
+				//}
 			}
-		}
-	}
+		//}
+	//}
 	
 	// Create cube vertices based on block_render_size and x, y, z offsets
 	glm::vec3 p0 = {(x - Block::BLOCK_RENDER_SIZE / 2.0f) + (chunk_world_xposition * Chunk::CHUNK_SIZE), y - Block::BLOCK_RENDER_SIZE / 2.0f, (z + Block::BLOCK_RENDER_SIZE / 2.0f) + (chunk_world_zposition * Chunk::CHUNK_SIZE) };
@@ -280,4 +289,10 @@ Chunk::~Chunk() { // Delete the blocks
 	}
 	delete[] m_pBlocks;
 	m_pBlocks = nullptr;
+
+	glDeleteBuffers(1, &vertex_buffer);
+	glDeleteBuffers(1, &normalBuffer);
+	glDeleteBuffers(1, &colorBuffer);
+	glDeleteBuffers(1, &IndexBuffer);
+	glDeleteVertexArrays(1, &VertexArrayID);
 }
