@@ -7,7 +7,8 @@
 
 enum BlockType {
 	STONE,
-	GRASS
+	GRASS,
+	INACTIVE
 };
 
 static glm::vec3 block_colors[] = {

@@ -25,13 +25,14 @@ public:
 	static const int NUMBER_OF_CUBE_VERTS;
 	static int CHUNK_COUNT;
 	int block_number;
-	Block ***m_pBlocks;
+	//Block ***m_pBlocks;
 
 	int chunk_id;
 	int chunk_world_xposition;
 	int chunk_world_zposition;
 	int absolute_positionX;
 	int absolute_positionZ;
+	bool buffers_initialized;
 	GLuint VertexArrayID;
 	GLuint vertex_buffer;
 	GLuint normalBuffer;
@@ -42,7 +43,7 @@ public:
 	std::vector<int> indices;
 	std::vector<float> normals;
 	std::vector<float> colors;
-
+	std::vector<BlockType> blocks;
 };
 
 

@@ -19,17 +19,32 @@ Chunk::Chunk(int worldx, int worldz) {
 	Chunk::chunk_world_zposition = worldz;
 	absolute_positionX = CHUNK_SIZE * chunk_world_xposition;
 	absolute_positionZ = CHUNK_SIZE * chunk_world_zposition;
-	m_pBlocks = new Block **[CHUNK_SIZE];
-	for (int i = 0; i < CHUNK_SIZE; i++) {
-		m_pBlocks[i] = new Block *[CHUNK_SIZE];
-		for (int j = 0; j < CHUNK_SIZE; j++) {
-			m_pBlocks[i][j] = new Block[CHUNK_SIZE];
+	buffers_initialized = false;
+	block_number = 0;
+	chunk_id = CHUNK_COUNT;
+	for (int x = 0; x < CHUNK_SIZE; x++) {
+		for (int z = 0; z < CHUNK_SIZE; z++) {
+			int height = generate_height(x + absolute_positionX, z + absolute_positionZ);
+			for (int y = 0; y < CHUNK_SIZE; y++) {
+				if (y == height - 1) {
+					blocks.push_back(GRASS);
+				}
+				if (y < height - 1) {
+					blocks.push_back(STONE);
+				}
+				if (y >= height) {
+					blocks.push_back(INACTIVE);
+				}
+				else {
+					create_cube(x, y, z, height);
+				}
+			}
 		}
 	}
-	block_number = 0;
+	
 	//vertices.reserve(Chunk::CHUNK_SIZE * Chunk::CHUNK_SIZE * 256 * 24);
 	//colors.reserve(Chunk::CHUNK_SIZE *Chunk::CHUNK_SIZE *256*24);
-	chunk_id = CHUNK_COUNT;
+	
 	++CHUNK_COUNT;
 }
 
@@ -43,16 +58,8 @@ Chunk::Chunk(const Chunk &c) {
 	chunk_world_zposition = c.chunk_world_zposition;
 	absolute_positionX = CHUNK_SIZE * chunk_world_xposition;
 	absolute_positionZ = CHUNK_SIZE * chunk_world_zposition;
-	m_pBlocks = new Block **[CHUNK_SIZE];
-	for (int i = 0; i < CHUNK_SIZE; ++i) {
-		m_pBlocks[i] = new Block *[CHUNK_SIZE];
-		for (int j = 0; j < CHUNK_SIZE; j++) {
-			m_pBlocks[i][j] = new Block[CHUNK_SIZE];
-			for (int k = 0; k < CHUNK_SIZE; k++) {
-				m_pBlocks[i][j][k] = c.m_pBlocks[i][j][k]; // Copy each Block
-			}
-		}
-	}
+	buffers_initialized = c.buffers_initialized;
+	blocks = c.blocks;
 	vertices = c.vertices;
 	colors = c.colors;
 	normals = c.normals;
@@ -71,22 +78,24 @@ Chunk::Chunk(Chunk&& other) noexcept
 	chunk_world_zposition(other.chunk_world_zposition),
 	absolute_positionX(other.absolute_positionX),
 	absolute_positionZ(other.absolute_positionZ),
-	m_pBlocks(other.m_pBlocks), // Move ownership of dynamic array
+	buffers_initialized(other.buffers_initialized),
+	//m_pBlocks(other.m_pBlocks), // Move ownership of dynamic array
 	block_number(other.block_number),
 	chunk_id(other.chunk_id),
 	vertices(std::move(other.vertices)),
 	colors(std::move(other.colors)),
 	normals(std::move(other.normals)),
-	indices(std::move(other.indices)) {
+	indices(std::move(other.indices)),
+	blocks(std::move(other.blocks)){
 
 	// Invalidate other's resources to prevent double deletion
-	other.m_pBlocks = nullptr;
+	//other.m_pBlocks = nullptr;
 }
 
 Chunk& Chunk::operator=(Chunk&& other) noexcept {
 	if (this != &other) {  // Prevent self-assignment
 						   // Free existing dynamically allocated resources
-		delete[] m_pBlocks;
+		//delete[] m_pBlocks;
 
 		// Move data from `other`
 		VertexArrayID = other.VertexArrayID;
@@ -100,16 +109,17 @@ Chunk& Chunk::operator=(Chunk&& other) noexcept {
 		absolute_positionZ = other.absolute_positionZ;
 		block_number = other.block_number;
 		chunk_id = other.chunk_id;
-
+		buffers_initialized = other.buffers_initialized;
 		// Move ownership of dynamically allocated array
-		m_pBlocks = other.m_pBlocks;
-		other.m_pBlocks = nullptr; // Ensure the moved-from object is safe
+		//m_pBlocks = other.m_pBlocks;
+		//other.m_pBlocks = nullptr; // Ensure the moved-from object is safe
 
 								   // Move STL containers
 		vertices = std::move(other.vertices);
 		colors = std::move(other.colors);
 		normals = std::move(other.normals);
 		indices = std::move(other.indices);
+		blocks = std::move(other.blocks);
 	}
 	return *this;
 }
@@ -131,10 +141,10 @@ void Chunk::remove_heights() {
 				
 				
 				if (y == height - 1) {
-					m_pBlocks[x][y][z].m_blockType = GRASS;
+					//m_pBlocks[x][y][z].m_blockType = GRASS;
 				}
 				if (y >= height) {
-					m_pBlocks[x][y][z].is_active = false;
+					//m_pBlocks[x][y][z].is_active = false;
 				}
 				else {
 					create_cube(x, y, z, height);
@@ -150,9 +160,9 @@ void Chunk::create_mesh() {
 	for (int x = 0; x < CHUNK_SIZE; x++) {
 		for (int z = 0; z < CHUNK_SIZE; z++) {
 			for (int y = 0; y < CHUNK_SIZE; y++) {
-				if (!(m_pBlocks[x][y][z].is_active)) {
-					continue;
-				}
+				//if (!(m_pBlocks[x][y][z].is_active)) {
+					//continue;
+				//}
 				//create_cube(x, y, z);
 			}
 		}
@@ -215,7 +225,7 @@ void Chunk::create_cube(int x, int y, int z, int height) {
 									  p0.x, p0.y, p0.z }); // Bottom face
 
 	for (int i = 0; i < 24; ++i) {
-		colors.insert(colors.end(), { block_colors[m_pBlocks[x][y][z].m_blockType].x, block_colors[m_pBlocks[x][y][z].m_blockType].y, block_colors[m_pBlocks[x][y][z].m_blockType].z });
+		colors.insert(colors.end(), { block_colors[blocks.back()].x, block_colors[blocks.back()].y, block_colors[blocks.back()].z });
 	}
 
     // Normals for flat shading (6 faces, each with the same normal for 4 vertices)
@@ -280,7 +290,9 @@ void Chunk::create_cube(int x, int y, int z, int height) {
 
 
 Chunk::~Chunk() { // Delete the blocks
-	if (!m_pBlocks) return;
+	
+	//if (!m_pBlocks) return;
+	/*
 	for (int i = 0; i < CHUNK_SIZE; ++i) {
 		for (int j = 0; j < CHUNK_SIZE; ++j) {
 			delete[] m_pBlocks[i][j];
@@ -289,10 +301,12 @@ Chunk::~Chunk() { // Delete the blocks
 	}
 	delete[] m_pBlocks;
 	m_pBlocks = nullptr;
+	*/
 
-	glDeleteBuffers(1, &vertex_buffer);
-	glDeleteBuffers(1, &normalBuffer);
-	glDeleteBuffers(1, &colorBuffer);
-	glDeleteBuffers(1, &IndexBuffer);
-	glDeleteVertexArrays(1, &VertexArrayID);
+	//glDeleteBuffers(1, &vertex_buffer);
+	//glDeleteBuffers(1, &normalBuffer);
+	//glDeleteBuffers(1, &colorBuffer);
+	//glDeleteBuffers(1, &IndexBuffer);
+	//glDeleteVertexArrays(1, &VertexArrayID);
+	
 }

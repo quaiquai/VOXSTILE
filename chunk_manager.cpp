@@ -4,13 +4,16 @@
 #include <set>
 
 int ChunkManager::CHUNK_SIZE = 16;
-int ChunkManager::RENDER_DISTANCE = 1;
+int ChunkManager::RENDER_DISTANCE = 5;
 
 ChunkManager::ChunkManager(glm::vec3 position) {
 	last_x_chunk = position.x / CHUNK_SIZE;
 	last_z_chunk = position.z / CHUNK_SIZE;
 	frame_counter = 0;
 	update_interval = 5;
+	// Start worker thread for background chunk generation
+	stop_thread = false;
+	worker_thread = std::thread(&ChunkManager::worker_loop, this);
 }
 
 //from the players position, render all the chunks around based on the render distance
@@ -47,78 +50,15 @@ void ChunkManager::generate_new_visible_chunks(glm::vec3 position) {
 		for (int x = chunk_positionX - RENDER_DISTANCE; x <= chunk_positionX + RENDER_DISTANCE; ++x) {
 			for (int z = chunk_positionZ - RENDER_DISTANCE; z <= chunk_positionZ + RENDER_DISTANCE; ++z) {
 				if (existing_chunks.find({ x, z }) == existing_chunks.end()) {
-					pending_chunks.push({ x, z });
-					/*
-					chunks.emplace_back(Chunk(x, z));  // Add only missing chunks
-					generate_new_chunk(chunks[chunks.size() - 1]);
-					load_list_index.push_back(chunks.size() - 1);
-					//renderer.init_chunk_buffers(chunks[chunks.size() - 1]);
-					
-					glBindVertexArray(chunks[chunks.size() - 1].VertexArrayID);
-					glBindBuffer(GL_ARRAY_BUFFER, chunks[chunks.size() - 1].vertex_buffer);
-
-					glBufferData(GL_ARRAY_BUFFER, chunks[chunks.size() - 1].vertices.size() * sizeof(float), &chunks[chunks.size() - 1].vertices[0], GL_STATIC_DRAW);
-					glEnableVertexAttribArray(0);
-					glVertexAttribPointer(
-						0,                  // attribute 0. No particular reason for 0, but must match the layout in the shader.
-						3,                 // size
-						GL_FLOAT,           // type
-						GL_FALSE,           // normalized?
-						0,                  // stride
-						(void*)0            // array buffer offset
-					);
-
-					glBindBuffer(GL_ARRAY_BUFFER, chunks[chunks.size() - 1].normalBuffer);
-					glBufferData(GL_ARRAY_BUFFER, chunks[chunks.size() - 1].normals.size() * sizeof(float), &chunks[chunks.size() - 1].normals[0], GL_STATIC_DRAW);
-					glEnableVertexAttribArray(1);
-					glBindBuffer(GL_ARRAY_BUFFER, chunks[chunks.size() - 1].normalBuffer);
-					glVertexAttribPointer(
-						1,                                // attribute
-						3,                                // size
-						GL_FLOAT,                         // type
-						GL_FALSE,                         // normalized?
-						0,                                // stride
-						(void*)0                          // array buffer offset
-					);
-
-					glBindBuffer(GL_ARRAY_BUFFER, chunks[chunks.size() - 1].colorBuffer);
-					glBufferData(GL_ARRAY_BUFFER, chunks[chunks.size() - 1].colors.size() * sizeof(float), &chunks[chunks.size() - 1].colors[0], GL_STATIC_DRAW);
-					glEnableVertexAttribArray(2);
-					glVertexAttribPointer(
-						2,                                // attribute
-						3,                                // size
-						GL_FLOAT,                         // type
-						GL_FALSE,                         // normalized?
-						0,                                // stride
-						(void*)0                          // array buffer offset
-					);
-
-					glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, chunks[chunks.size() - 1].IndexBuffer);
-					glBufferData(GL_ELEMENT_ARRAY_BUFFER, chunks[chunks.size() - 1].indices.size() * sizeof(int), &chunks[chunks.size() - 1].indices[0], GL_STATIC_DRAW);
-
-					glBindVertexArray(0);
-
-					++number_of_generated_chunks;
-					if (number_of_generated_chunks >= 2) {
-						return;
-					}
-					*/
+					std::lock_guard<std::mutex> lock(chunk_mutex);
+					pending_chunks.push({ x, z });				
 				}
+				chunk_cv.notify_one(); // Wake up worker thread
 			}
 		}
 	}
 }
 
-/*
-void ChunkManager::remove_objects() {
-	for (int i = 0; i < unload_list.size(); i++) {
-		chunks.erase(std::remove_if(chunks.begin(), chunks.end(),
-			[unload_list[i]](const std::unique_ptr<Chunk>& obj) { return obj->id == unload_list[i]; }),
-			chunks.end());
-	}
-	
-}
-*/
 
 void ChunkManager::update_visible_chunks(glm::vec3 position) {
 	generate_new_visible_chunks(position);
@@ -134,29 +74,6 @@ void ChunkManager::update_visible_chunks(glm::vec3 position) {
 		pending_chunks.pop();
 
 		chunks.emplace_back(Chunk(x, z));
-		generate_new_chunk(chunks.back());
-
-		glBindVertexArray(chunks.back().VertexArrayID);
-		glBindBuffer(GL_ARRAY_BUFFER, chunks.back().vertex_buffer);
-		glBufferData(GL_ARRAY_BUFFER, chunks.back().vertices.size() * sizeof(float), chunks.back().vertices.data(), GL_STATIC_DRAW);
-		glEnableVertexAttribArray(0);
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
-
-		glBindBuffer(GL_ARRAY_BUFFER, chunks.back().normalBuffer);
-		glBufferData(GL_ARRAY_BUFFER, chunks.back().normals.size() * sizeof(float), chunks.back().normals.data(), GL_STATIC_DRAW);
-		glEnableVertexAttribArray(1);
-		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
-
-		glBindBuffer(GL_ARRAY_BUFFER, chunks.back().colorBuffer);
-		glBufferData(GL_ARRAY_BUFFER, chunks.back().colors.size() * sizeof(float), chunks.back().colors.data(), GL_STATIC_DRAW);
-		glEnableVertexAttribArray(2);
-		glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
-
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, chunks.back().IndexBuffer);
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, chunks.back().indices.size() * sizeof(int), chunks.back().indices.data(), GL_STATIC_DRAW);
-
-		glBindVertexArray(0);
-
 		--chunks_to_process; // Process only a limited number per frame
 	}
 
@@ -167,40 +84,33 @@ void ChunkManager::update_visible_chunks(glm::vec3 position) {
 		if (distance_from_cameraX > RENDER_DISTANCE || distance_from_cameraZ > RENDER_DISTANCE) {
 			unload_list.push_back(chunks[i]);  // Move chunk to unload list
 											   // Erase the chunk from the main chunks list
-
 			chunks.erase(chunks.begin() + i);
-			
-		}
-		
-	}
-
-	/*
-	chunks.erase(std::remove_if(chunks.begin(), chunks.end(),
-		[this, position](const Chunk& chunk) {
-		int distance_from_cameraX = glm::abs(chunk.chunk_world_xposition - (position.x / CHUNK_SIZE));
-		int distance_from_cameraZ = glm::abs(chunk.chunk_world_zposition - (position.z / CHUNK_SIZE));
-
-		if (distance_from_cameraX > RENDER_DISTANCE || distance_from_cameraZ > RENDER_DISTANCE) {
-			unload_list.push_back(chunk);
-			return true;  // Mark for removal
-		}
-		return false;
-	}),
-		chunks.end());
-	*/
-	/*
-	for (size_t i = chunks.size(); i-- > 0; ) {
-		int distance_from_cameraX = glm::abs(chunks[i].chunk_world_xposition - (position.x / CHUNK_SIZE));
-		int distance_from_cameraZ = glm::abs(chunks[i].chunk_world_zposition - (position.z / CHUNK_SIZE));
-		if (distance_from_cameraX > RENDER_DISTANCE || distance_from_cameraZ > RENDER_DISTANCE) {
-			unload_list.push_back(chunks[i]);
-			std::cout << distance_from_cameraX << std::endl;
-			std::cout << distance_from_cameraZ << std::endl;
-			return;
 		}
 	}
-	*/
-	
+}
+
+void ChunkManager::worker_loop() {
+	while (!stop_thread) {
+		std::pair<int, int> chunk_coords;
+
+		{
+			std::unique_lock<std::mutex> lock(chunk_mutex);
+			chunk_cv.wait(lock, [this] { return !pending_chunks.empty() || stop_thread; });
+
+			if (stop_thread) break; // Exit if the manager is being destroyed
+
+			chunk_coords = pending_chunks.front();
+			pending_chunks.pop();
+		}
+
+		// Generate chunk outside the locked section
+		Chunk new_chunk(chunk_coords.first, chunk_coords.second);
+
+		{
+			std::lock_guard<std::mutex> lock(chunk_mutex);
+			chunks.push_back(std::move(new_chunk)); // Move the generated chunk to the active list
+		}
+	}
 }
 
 void ChunkManager::generate_new_chunk(Chunk &chunk) {
@@ -221,14 +131,41 @@ void ChunkManager::generate_chunks() {
 
 void ChunkManager::render_chunks() {
 	
-	
+	glEnable(GL_DEPTH_TEST);  // Ensure depth testing is on
+	glEnable(GL_CULL_FACE);   // Cull back faces for performance
+	glCullFace(GL_BACK);
+
 	for (int i = 0; i < ChunkManager::chunks.size(); ++i) {
+
+		if (!chunks[i].buffers_initialized) {
+			std::cerr << "Warning: Chunk at (" << chunks[i].chunk_world_xposition
+				<< ", " << chunks[i].chunk_world_zposition
+				<< ") has uninitialized buffers!" << std::endl;
+			continue;
+		}
+
+		if (chunks[i].indices.empty()) {
+			std::cerr << "Warning: Chunk at (" << chunks[i].chunk_world_xposition
+				<< ", " << chunks[i].chunk_world_zposition
+				<< ") has no indices!" << std::endl;
+			continue;
+		}
+
+
 		glBindVertexArray(chunks[i].VertexArrayID);
 		glDrawElements(GL_TRIANGLES, chunks[i].indices.size(), GL_UNSIGNED_INT, 0); // Starting from vertex 0; 3 vertices total -> 1 triangle
+		
 	}
-	
-	
-	//glBindVertexArray(chunks[chunks.size()-1].VertexArrayID);
-	//glDrawElements(GL_TRIANGLES, chunks[9].indices.size(), GL_UNSIGNED_INT, 0); // Starting from vertex 0; 3 vertices total -> 1 triangle
 
+	//glBindVertexArray(chunks[0].VertexArrayID);
+	//glDrawElements(GL_TRIANGLES, chunks[0].indices.size(), GL_UNSIGNED_INT, 0); // Starting from vertex 0; 3 vertices total -> 1 triangle
+
+}
+
+ChunkManager::~ChunkManager() {
+	stop_thread = true;
+	chunk_cv.notify_one(); // Wake up thread to exit
+	if (worker_thread.joinable()) {
+		worker_thread.join();
+	}
 }
