@@ -4,7 +4,7 @@
 #include <set>
 
 int ChunkManager::CHUNK_SIZE = 16;
-int ChunkManager::RENDER_DISTANCE = 1;
+int ChunkManager::RENDER_DISTANCE = 5;
 
 ChunkManager::ChunkManager(glm::vec3 position) {
 	last_x_chunk = position.x / CHUNK_SIZE;
@@ -21,7 +21,6 @@ void ChunkManager::generate_chunk_buffers() {
 		if (!chunks[i].buffers_generated) {
 			chunks[i].generate_buffers();
 		}
-		
 	}
 }
 
@@ -72,25 +71,21 @@ void ChunkManager::generate_new_visible_chunks(glm::vec3 position) {
 
 void ChunkManager::update_visible_chunks(glm::vec3 position) {
 	generate_new_visible_chunks(position);
-	if (frame_counter % update_interval != 0) {
-		return; // Skip this frame
+
+	{
+		std::lock_guard<std::mutex> lock(chunk_mutex);
+		while (!pending_ready_chunks.empty()) {
+			chunks.emplace_back(std::move(pending_ready_chunks.front()));
+			pending_ready_chunks.pop();
+		}
 	}
 
+	//if (frame_counter % update_interval != 0) {
+		//return; // Skip this frame
+	//}
+
 	int chunks_to_process = 2; // Limit chunks per frame
-	/*
-	while (!pending_chunks.empty() && chunks_to_process > 0) {
-		std::pair<int, int> chunk_coords = pending_chunks.front();
-		int x = chunk_coords.first;
-		int z = chunk_coords.second;
-		pending_chunks.pop();
-		{
-			
-			chunks.emplace_back(Chunk(x, z));
-		}
-		
-		--chunks_to_process; // Process only a limited number per frame
-	}
-	*/
+
 
 	for (size_t i = chunks.size(); i-- > 0;) {  // Reverse iteration to avoid invalidating indices
 		int distance_from_cameraX = glm::abs(chunks[i].chunk_world_xposition - (position.x / CHUNK_SIZE));
@@ -119,6 +114,7 @@ void ChunkManager::worker_loop() {
 
 			chunk_coords = pending_chunks.front();
 			pending_chunks.pop();
+
 		}
 
 		// Generate chunk outside the locked section
@@ -126,7 +122,7 @@ void ChunkManager::worker_loop() {
 		
 		{
 			std::lock_guard<std::mutex> lock(chunk_mutex);
-			chunks.push_back(new_chunk); // Move the generated chunk to the active list
+			pending_ready_chunks.push(std::move(new_chunk)); // Move the generated chunk to the active list
 		}
 	}
 }
@@ -169,7 +165,7 @@ void ChunkManager::render_chunks() {
 			continue;
 		}
 
-		if (chunks[i].buffers_generated && chunks[i].buffers_initialized) {
+		if (chunks[i].buffers_generated && chunks[i].buffers_initialized && !chunks[i].indices.empty()) {
 			glBindVertexArray(chunks[i].VertexArrayID);
 			glDrawElements(GL_TRIANGLES, chunks[i].indices.size(), GL_UNSIGNED_INT, 0);
 		}

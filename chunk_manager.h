@@ -29,6 +29,7 @@ public:
 
 	std::vector<Chunk> chunks;
 	std::vector<Chunk> unload_list;
+	std::queue<Chunk> pending_ready_chunks;
 	std::queue<std::pair<int, int>> pending_chunks;
 	std::vector<int> load_list_index;
 
