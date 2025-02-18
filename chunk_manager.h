@@ -40,6 +40,7 @@ public:
 	void update_visible_chunks(glm::vec3 position);
 	void generate_new_visible_chunks(glm::vec3 position);
 	void generate_new_chunk(Chunk &chunk);
+	void generate_chunk_buffers();
 	void clear_unload_list();
 	void remove_objects();
 	void generate_chunks();

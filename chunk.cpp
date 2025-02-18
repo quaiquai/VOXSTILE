@@ -10,16 +10,13 @@ const int Chunk::NUMBER_OF_CUBE_VERTS = 24;
 int Chunk::CHUNK_COUNT = 0;
 
 Chunk::Chunk(int worldx, int worldz) {
-	glGenVertexArrays(1, &VertexArrayID);
-	glGenBuffers(1, &vertex_buffer);
-	glGenBuffers(1, &normalBuffer);
-	glGenBuffers(1, &colorBuffer);
-	glGenBuffers(1, &IndexBuffer);
+	
 	Chunk::chunk_world_xposition = worldx;
 	Chunk::chunk_world_zposition = worldz;
 	absolute_positionX = CHUNK_SIZE * chunk_world_xposition;
 	absolute_positionZ = CHUNK_SIZE * chunk_world_zposition;
 	buffers_initialized = false;
+	buffers_generated = false;
 	block_number = 0;
 	chunk_id = CHUNK_COUNT;
 	for (int x = 0; x < CHUNK_SIZE; x++) {
@@ -59,6 +56,7 @@ Chunk::Chunk(const Chunk &c) {
 	absolute_positionX = CHUNK_SIZE * chunk_world_xposition;
 	absolute_positionZ = CHUNK_SIZE * chunk_world_zposition;
 	buffers_initialized = c.buffers_initialized;
+	buffers_generated = c.buffers_generated;
 	blocks = c.blocks;
 	vertices = c.vertices;
 	colors = c.colors;
@@ -79,6 +77,7 @@ Chunk::Chunk(Chunk&& other) noexcept
 	absolute_positionX(other.absolute_positionX),
 	absolute_positionZ(other.absolute_positionZ),
 	buffers_initialized(other.buffers_initialized),
+	buffers_generated(other.buffers_generated),
 	//m_pBlocks(other.m_pBlocks), // Move ownership of dynamic array
 	block_number(other.block_number),
 	chunk_id(other.chunk_id),
@@ -110,6 +109,7 @@ Chunk& Chunk::operator=(Chunk&& other) noexcept {
 		block_number = other.block_number;
 		chunk_id = other.chunk_id;
 		buffers_initialized = other.buffers_initialized;
+		buffers_generated = other.buffers_generated;
 		// Move ownership of dynamically allocated array
 		//m_pBlocks = other.m_pBlocks;
 		//other.m_pBlocks = nullptr; // Ensure the moved-from object is safe
@@ -122,6 +122,15 @@ Chunk& Chunk::operator=(Chunk&& other) noexcept {
 		blocks = std::move(other.blocks);
 	}
 	return *this;
+}
+
+void Chunk::generate_buffers() {
+	glGenVertexArrays(1, &VertexArrayID);
+	glGenBuffers(1, &vertex_buffer);
+	glGenBuffers(1, &normalBuffer);
+	glGenBuffers(1, &colorBuffer);
+	glGenBuffers(1, &IndexBuffer);
+	buffers_generated = true;
 }
 
 

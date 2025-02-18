@@ -20,6 +20,7 @@ public:
 	void create_mesh();
 	void create_cube(int x, int y, int z, int height);
 	void remove_heights();
+	void generate_buffers();
 
 	static const int CHUNK_SIZE;
 	static const int NUMBER_OF_CUBE_VERTS;
@@ -33,6 +34,7 @@ public:
 	int absolute_positionX;
 	int absolute_positionZ;
 	bool buffers_initialized;
+	bool buffers_generated;
 	GLuint VertexArrayID;
 	GLuint vertex_buffer;
 	GLuint normalBuffer;
