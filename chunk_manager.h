@@ -37,7 +37,7 @@ public:
 	ChunkManager() = default;
 	~ChunkManager();
 
-	void generate_visible_chunks(glm::vec3 position);
+	void spawn_initial_chunks(glm::vec3 position);
 	void update_visible_chunks(glm::vec3 position);
 	void generate_new_visible_chunks(glm::vec3 position);
 	void generate_new_chunk(Chunk &chunk);

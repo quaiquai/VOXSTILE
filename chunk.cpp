@@ -87,6 +87,12 @@ Chunk::Chunk(Chunk&& other) noexcept
 	indices(std::move(other.indices)),
 	blocks(std::move(other.blocks)){
 
+	
+	other.VertexArrayID = 0;
+	other.vertex_buffer = 0;
+	other.normalBuffer = 0;
+	other.IndexBuffer = 0;
+	other.colorBuffer = 0;
 	// Invalidate other's resources to prevent double deletion
 	//other.m_pBlocks = nullptr;
 }
@@ -120,6 +126,12 @@ Chunk& Chunk::operator=(Chunk&& other) noexcept {
 		normals = std::move(other.normals);
 		indices = std::move(other.indices);
 		blocks = std::move(other.blocks);
+		
+		other.VertexArrayID = 0;
+		other.vertex_buffer = 0;
+		other.normalBuffer = 0;
+		other.IndexBuffer = 0;
+		other.colorBuffer = 0;
 	}
 	return *this;
 }
@@ -298,24 +310,15 @@ void Chunk::create_cube(int x, int y, int z, int height) {
 }
 
 
-Chunk::~Chunk() { // Delete the blocks
-	
-	//if (!m_pBlocks) return;
-	/*
-	for (int i = 0; i < CHUNK_SIZE; ++i) {
-		for (int j = 0; j < CHUNK_SIZE; ++j) {
-			delete[] m_pBlocks[i][j];
-		}
-		delete[] m_pBlocks[i];
+Chunk::~Chunk() { 
+	// Delete the buffers
+	if (colorBuffer && normalBuffer && IndexBuffer) {
+		glDeleteBuffers(1, &vertex_buffer);
+		glDeleteBuffers(1, &normalBuffer);
+		glDeleteBuffers(1, &colorBuffer);
+		glDeleteBuffers(1, &IndexBuffer);
+		glDeleteVertexArrays(1, &VertexArrayID);
 	}
-	delete[] m_pBlocks;
-	m_pBlocks = nullptr;
-	*/
-
-	//glDeleteBuffers(1, &vertex_buffer);
-	//glDeleteBuffers(1, &normalBuffer);
-	//glDeleteBuffers(1, &colorBuffer);
-	//glDeleteBuffers(1, &IndexBuffer);
-	//glDeleteVertexArrays(1, &VertexArrayID);
+	
 	
 }

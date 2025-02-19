@@ -12,7 +12,7 @@ uniform vec3 viewPos;
 void main(){
 	//vec3 normalColor = fragmentColor * 0.5 + 0.5;
 	float specularStrength = 0.5;
-	vec3 ambient = vec3(0.1, 0.1, 0.1);
+	vec3 ambient = vec3(0.2, 0.2, 0.2);
 	vec3 norm = normalize(v_normal);
 	vec3 lightDir = normalize(lightPosition - fragPos);
 	vec3 viewDir = normalize(viewPos - fragPos);

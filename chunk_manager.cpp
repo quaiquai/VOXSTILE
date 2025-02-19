@@ -3,12 +3,14 @@
 #include "chunk.h"
 #include <set>
 
-int ChunkManager::CHUNK_SIZE = 16;
-int ChunkManager::RENDER_DISTANCE = 5;
+int ChunkManager::CHUNK_SIZE = 16;				//LxWxH of chunk
+int ChunkManager::RENDER_DISTANCE = 1;			//X-Z area of chunks to render around player position
 
 ChunkManager::ChunkManager(glm::vec3 position) {
+	//used for determining if moved of chunk boundaries
 	last_x_chunk = position.x / CHUNK_SIZE;
 	last_z_chunk = position.z / CHUNK_SIZE;
+	//can use for limiting updates dependent on frames
 	frame_counter = 0;
 	update_interval = 5;
 	// Start worker thread for background chunk generation
@@ -16,6 +18,7 @@ ChunkManager::ChunkManager(glm::vec3 position) {
 	worker_thread = std::thread(&ChunkManager::worker_loop, this);
 }
 
+//Loops through all the chunks and generate VAO and VBOs needed if haven't been done
 void ChunkManager::generate_chunk_buffers() {
 	for (int i = 0; i < chunks.size(); i++) {
 		if (!chunks[i].buffers_generated) {
@@ -26,14 +29,14 @@ void ChunkManager::generate_chunk_buffers() {
 
 //from the players position, render all the chunks around based on the render distance
 //this can be calculated by rendering over the range of position - renderdistance -> position + renderdistance in the x and z axis
-void ChunkManager::generate_visible_chunks(glm::vec3 position){
+void ChunkManager::spawn_initial_chunks(glm::vec3 position){
 	
 	int chunk_positionX = position.x / CHUNK_SIZE;
 	int chunk_positionZ = position.z / CHUNK_SIZE;
 
 	for (int x = chunk_positionX - RENDER_DISTANCE; x < chunk_positionX + RENDER_DISTANCE; ++x) {
 		for (int z = chunk_positionZ - RENDER_DISTANCE; z < chunk_positionZ +RENDER_DISTANCE; ++z) {
-			ChunkManager::chunks.push_back(Chunk(x, z));
+			ChunkManager::chunks.push_back(std::move(Chunk(x, z)));
 		}
 	}
 }
@@ -179,7 +182,7 @@ void ChunkManager::render_chunks() {
 }
 
 ChunkManager::~ChunkManager() {
-	//stop_thread = true;
+	stop_thread = true;
 	chunk_cv.notify_one(); // Wake up thread to exit
 	if (worker_thread.joinable()) {
 		worker_thread.join();
