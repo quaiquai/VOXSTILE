@@ -17,11 +17,14 @@ Chunk::Chunk(int worldx, int worldz) {
 	absolute_positionZ = CHUNK_SIZE * chunk_world_zposition;
 	buffers_initialized = false;
 	buffers_generated = false;
+	blocks_generated = false;
 	block_number = 0;
 	chunk_id = CHUNK_COUNT;
+	
 	for (int x = 0; x < CHUNK_SIZE; x++) {
 		for (int z = 0; z < CHUNK_SIZE; z++) {
-			int height = generate_height(x + absolute_positionX, z + absolute_positionZ);
+			//int height = generate_height(x + absolute_positionX, z + absolute_positionZ);
+			int height = 10;
 			for (int y = 0; y < CHUNK_SIZE; y++) {
 				if (y == height - 1) {
 					blocks.push_back(GRASS);
@@ -45,6 +48,44 @@ Chunk::Chunk(int worldx, int worldz) {
 	++CHUNK_COUNT;
 }
 
+Chunk::Chunk(int worldx, int worldz, int test) {
+
+	Chunk::chunk_world_xposition = worldx;
+	Chunk::chunk_world_zposition = worldz;
+	absolute_positionX = CHUNK_SIZE * chunk_world_xposition;
+	absolute_positionZ = CHUNK_SIZE * chunk_world_zposition;
+	buffers_initialized = false;
+	buffers_generated = false;
+	blocks_generated = false;
+	block_number = 0;
+	chunk_id = CHUNK_COUNT;
+	/*
+	for (int x = 0; x < CHUNK_SIZE; x++) {
+		for (int z = 0; z < CHUNK_SIZE; z++) {
+			int height = 10;
+			for (int y = 0; y < CHUNK_SIZE; y++) {
+				if (y == height - 1) {
+					blocks.push_back(GRASS);
+				}
+				if (y < height - 1) {
+					blocks.push_back(STONE);
+				}
+				if (y >= height) {
+					blocks.push_back(INACTIVE);
+				}
+				else {
+					create_cube(x, y, z, height);
+				}
+			}
+		}
+	}
+	*/
+	//vertices.reserve(Chunk::CHUNK_SIZE * Chunk::CHUNK_SIZE * 256 * 24);
+	//colors.reserve(Chunk::CHUNK_SIZE *Chunk::CHUNK_SIZE *256*24);
+
+	++CHUNK_COUNT;
+}
+
 Chunk::Chunk(const Chunk &c) {
 	VertexArrayID = c.VertexArrayID;
 	vertex_buffer = c.vertex_buffer;
@@ -57,6 +98,7 @@ Chunk::Chunk(const Chunk &c) {
 	absolute_positionZ = CHUNK_SIZE * chunk_world_zposition;
 	buffers_initialized = c.buffers_initialized;
 	buffers_generated = c.buffers_generated;
+	blocks_generated = c.blocks_generated;
 	blocks = c.blocks;
 	vertices = c.vertices;
 	colors = c.colors;
@@ -64,6 +106,7 @@ Chunk::Chunk(const Chunk &c) {
 	indices = c.indices;
 	block_number = c.block_number;
 	chunk_id = c.chunk_id;
+
 }
 
 Chunk::Chunk(Chunk&& other) noexcept
@@ -78,6 +121,7 @@ Chunk::Chunk(Chunk&& other) noexcept
 	absolute_positionZ(other.absolute_positionZ),
 	buffers_initialized(other.buffers_initialized),
 	buffers_generated(other.buffers_generated),
+	blocks_generated(other.blocks_generated),
 	//m_pBlocks(other.m_pBlocks), // Move ownership of dynamic array
 	block_number(other.block_number),
 	chunk_id(other.chunk_id),
@@ -116,6 +160,7 @@ Chunk& Chunk::operator=(Chunk&& other) noexcept {
 		chunk_id = other.chunk_id;
 		buffers_initialized = other.buffers_initialized;
 		buffers_generated = other.buffers_generated;
+		blocks_generated = other.blocks_generated;
 		// Move ownership of dynamically allocated array
 		//m_pBlocks = other.m_pBlocks;
 		//other.m_pBlocks = nullptr; // Ensure the moved-from object is safe
@@ -154,26 +199,27 @@ float Chunk::generate_height(int x, int z) {
 	return n;
 }
 
-void Chunk::remove_heights() {
+void Chunk::generate_blocks() {
 	for (int x = 0; x < CHUNK_SIZE; x++) {
 		for (int z = 0; z < CHUNK_SIZE; z++) {
-			int height = generate_height(x + absolute_positionX, z + absolute_positionZ);
+			int height = 10;
 			for (int y = 0; y < CHUNK_SIZE; y++) {
-				
-				
 				if (y == height - 1) {
-					//m_pBlocks[x][y][z].m_blockType = GRASS;
+					blocks.push_back(GRASS);
+				}
+				if (y < height - 1) {
+					blocks.push_back(STONE);
 				}
 				if (y >= height) {
-					//m_pBlocks[x][y][z].is_active = false;
+					blocks.push_back(INACTIVE);
 				}
 				else {
 					create_cube(x, y, z, height);
 				}
-				
 			}
 		}
 	}
+	blocks_generated = true;
 }
 
 
@@ -312,6 +358,7 @@ void Chunk::create_cube(int x, int y, int z, int height) {
 
 Chunk::~Chunk() { 
 	// Delete the buffers
+	
 	if (colorBuffer && normalBuffer && IndexBuffer) {
 		glDeleteBuffers(1, &vertex_buffer);
 		glDeleteBuffers(1, &normalBuffer);
@@ -319,6 +366,7 @@ Chunk::~Chunk() {
 		glDeleteBuffers(1, &IndexBuffer);
 		glDeleteVertexArrays(1, &VertexArrayID);
 	}
+	
 	
 	
 }

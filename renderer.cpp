@@ -57,9 +57,10 @@ void Renderer::init_chunk_buffers(Chunk &chunk) {
 
 
 void Renderer::initChunkBuffers(ChunkManager &chunks) {
-	//std::lock_guard<std::mutex> lock(chunks.chunk_mutex); // Lock for thread safety
+	std::lock_guard<std::mutex> lock(chunks.chunk_mutex); // Lock for thread safety
 	for (int i = 0; i < chunks.chunks.size(); ++i) {
 		if (chunks.chunks[i].buffers_initialized == false) {
+			
 			glBindVertexArray(chunks.chunks[i].VertexArrayID);
 			glBindBuffer(GL_ARRAY_BUFFER, chunks.chunks[i].vertex_buffer);
 

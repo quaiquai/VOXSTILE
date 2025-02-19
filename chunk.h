@@ -12,6 +12,7 @@ public:
 
 	Chunk() = default;
 	Chunk(int worldx, int worldz);
+	Chunk(int worldx, int worldz, int test);
 	Chunk(const Chunk &c); //copy
 	Chunk(Chunk &&other) noexcept;
 	Chunk& operator=(Chunk&& other) noexcept;
@@ -19,7 +20,7 @@ public:
 
 	void create_mesh();
 	void create_cube(int x, int y, int z, int height);
-	void remove_heights();
+	void generate_blocks();
 	void generate_buffers();
 
 	static const int CHUNK_SIZE;
@@ -35,6 +36,7 @@ public:
 	int absolute_positionZ;
 	bool buffers_initialized;
 	bool buffers_generated;
+	bool blocks_generated;
 	GLuint VertexArrayID;
 	GLuint vertex_buffer;
 	GLuint normalBuffer;

@@ -8,6 +8,8 @@
 #include <condition_variable>
 #include "glad/glad.h"
 #include "chunk.h"
+#include <algorithm>
+#include <unordered_set>
 
 class ChunkManager {
 
@@ -21,6 +23,8 @@ public:
 	int frame_counter;
 	int update_interval;
 
+	static constexpr size_t MAX_QUEUE_SIZE = 100;
+
 	// Threading
 	std::thread worker_thread;
 	std::mutex chunk_mutex;
@@ -28,7 +32,7 @@ public:
 	bool stop_thread = false;
 
 	std::vector<Chunk> chunks;
-	std::vector<Chunk> unload_list;
+	std::queue<int> unload_list;
 	std::queue<Chunk> pending_ready_chunks;
 	std::queue<std::pair<int, int>> pending_chunks;
 	std::vector<int> load_list_index;
@@ -43,6 +47,9 @@ public:
 	void generate_new_chunk(Chunk &chunk);
 	void generate_chunk_buffers();
 	void clear_unload_list();
+	void add_pending_chunks();
+	void remove_unload_chunks();
+	void fill_chunks();
 	void remove_objects();
 	void generate_chunks();
 	void render_chunks();

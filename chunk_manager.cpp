@@ -3,13 +3,20 @@
 #include "chunk.h"
 #include <set>
 
+// Hash function for unordered_set<pair<int, int>>
+struct PairHash {
+	std::size_t operator()(const std::pair<int, int>& p) const {
+		return std::hash<int>()(p.first) ^ (std::hash<int>()(p.second) << 1);
+	}
+};
+
 int ChunkManager::CHUNK_SIZE = 16;				//LxWxH of chunk
-int ChunkManager::RENDER_DISTANCE = 1;			//X-Z area of chunks to render around player position
+int ChunkManager::RENDER_DISTANCE = 4;			//X-Z area of chunks to render around player position
 
 ChunkManager::ChunkManager(glm::vec3 position) {
 	//used for determining if moved of chunk boundaries
-	last_x_chunk = position.x / CHUNK_SIZE;
-	last_z_chunk = position.z / CHUNK_SIZE;
+	last_x_chunk = 0;
+	last_z_chunk = 0;
 	//can use for limiting updates dependent on frames
 	frame_counter = 0;
 	update_interval = 5;
@@ -20,8 +27,10 @@ ChunkManager::ChunkManager(glm::vec3 position) {
 
 //Loops through all the chunks and generate VAO and VBOs needed if haven't been done
 void ChunkManager::generate_chunk_buffers() {
+	std::lock_guard<std::mutex> lock(chunk_mutex);
 	for (int i = 0; i < chunks.size(); i++) {
 		if (!chunks[i].buffers_generated) {
+			
 			chunks[i].generate_buffers();
 		}
 	}
@@ -41,73 +50,117 @@ void ChunkManager::spawn_initial_chunks(glm::vec3 position){
 	}
 }
 
+void ChunkManager::fill_chunks() {
+	for (Chunk &c : chunks) {
+		if (!c.blocks_generated) {
+			c.generate_blocks();
+		}	
+	}
+}
+
 void ChunkManager::generate_new_visible_chunks(glm::vec3 position) {
 	int chunk_positionX = position.x / CHUNK_SIZE;
 	int chunk_positionZ = position.z / CHUNK_SIZE;
 
-	// Check if the player moved to a new chunk
-	if (chunk_positionX != last_x_chunk || chunk_positionZ != last_z_chunk) {
-		last_x_chunk = chunk_positionX;
-		last_z_chunk = chunk_positionZ;
+	// Create a set of existing chunk positions for fast lookup
+	// Use unordered_set for faster lookups
+	std::unordered_set<std::pair<int, int>, PairHash> existing_chunks;
 
-		// Create a set of existing chunk positions for fast lookup
-		std::set<std::pair<int, int>> existing_chunks;
-		for (const auto& chunk : chunks) {
-			existing_chunks.insert({ chunk.chunk_world_xposition, chunk.chunk_world_zposition });
+	for (size_t i = chunks.size(); i-- > 0;) {  // Reverse iteration to avoid invalidating indices
+		int distance_from_cameraX = glm::abs(chunks[i].chunk_world_xposition - last_x_chunk);
+		int distance_from_cameraZ = glm::abs(chunks[i].chunk_world_zposition - last_z_chunk);
+
+		if (distance_from_cameraX > RENDER_DISTANCE || distance_from_cameraZ > RENDER_DISTANCE) {
+
+			{
+				//std::lock_guard<std::mutex> lock(chunk_mutex);
+				unload_list.push(i);
+			}					   // Erase the chunk from the main chunks list
+
 		}
+		else {
+			existing_chunks.insert({ chunks[i].chunk_world_xposition, chunks[i].chunk_world_zposition });
+		}
+	}
 
-		// Generate new chunks around the player
-		int number_of_generated_chunks = 0;
-		for (int x = chunk_positionX - RENDER_DISTANCE; x <= chunk_positionX + RENDER_DISTANCE; ++x) {
-			for (int z = chunk_positionZ - RENDER_DISTANCE; z <= chunk_positionZ + RENDER_DISTANCE; ++z) {
-				if (existing_chunks.find({ x, z }) == existing_chunks.end()) {
-					//std::lock_guard<std::mutex> lock(chunk_mutex);
-					pending_chunks.push({ x, z });				
-				}
-				
+	// Generate new chunks around the player
+	int number_of_generated_chunks = 0;
+	for (int x = chunk_positionX - RENDER_DISTANCE; x <= chunk_positionX + RENDER_DISTANCE; ++x) {
+		for (int z = chunk_positionZ - RENDER_DISTANCE; z <= chunk_positionZ + RENDER_DISTANCE; ++z) {
+			if (existing_chunks.find({ x, z }) == existing_chunks.end()) {
+				//std::lock_guard<std::mutex> lock(chunk_mutex);
+
+				pending_chunks.push({ x, z });
+			
 			}
+
 		}
-		chunk_cv.notify_one(); // Wake up worker thread
+	}
+	
+	last_x_chunk = chunk_positionX;
+	last_z_chunk = chunk_positionZ;
+
+	
+	chunk_cv.notify_one(); // Wake up worker thread
+	
+}
+
+void ChunkManager::add_pending_chunks() {
+
+	int num_to_process = 2;
+	//move all chunks that are ready to the main chunk list
+	/*
+	{
+		while (num_to_process > 0) {
+			std::lock_guard<std::mutex> lock(chunk_mutex);
+			if (!pending_ready_chunks.empty()) {
+				chunks.emplace_back(std::move(pending_ready_chunks.front()));
+				pending_ready_chunks.pop();
+			}
+			num_to_process--;
+		}	
+	}
+	*/
+	
+
+}
+
+void ChunkManager::remove_unload_chunks() {
+	int num_to_process = 2;
+	//remove all the chunks that were detected out of render distance
+	{
+		while (num_to_process > 0) {
+			std::lock_guard<std::mutex> lock(chunk_mutex);
+			if (!unload_list.empty()) {
+				chunks.erase(chunks.begin() + unload_list.front());
+				unload_list.pop();
+			}
+			num_to_process--;
+		}
+		
 	}
 }
 
-
 void ChunkManager::update_visible_chunks(glm::vec3 position) {
+
 	generate_new_visible_chunks(position);
+	
+	
+	
+	
 
-	{
-		std::lock_guard<std::mutex> lock(chunk_mutex);
-		while (!pending_ready_chunks.empty()) {
-			chunks.emplace_back(std::move(pending_ready_chunks.front()));
-			pending_ready_chunks.pop();
-		}
-	}
-
-	//if (frame_counter % update_interval != 0) {
-		//return; // Skip this frame
-	//}
-
-	int chunks_to_process = 2; // Limit chunks per frame
+	
 
 
-	for (size_t i = chunks.size(); i-- > 0;) {  // Reverse iteration to avoid invalidating indices
-		int distance_from_cameraX = glm::abs(chunks[i].chunk_world_xposition - (position.x / CHUNK_SIZE));
-		int distance_from_cameraZ = glm::abs(chunks[i].chunk_world_zposition - (position.z / CHUNK_SIZE));
-
-		if (distance_from_cameraX > RENDER_DISTANCE || distance_from_cameraZ > RENDER_DISTANCE) {
-			unload_list.push_back(chunks[i]);  // Move chunk to unload list
-			{
-				std::lock_guard<std::mutex> lock(chunk_mutex);
-				chunks.erase(chunks.begin() + i);
-			}					   // Erase the chunk from the main chunks list
-			
-		}
-	}
+	
 }
 
 void ChunkManager::worker_loop() {
 	while (!stop_thread) {
 		std::pair<int, int> chunk_coords;
+
+		// Generate chunk outside the locked section
+		
 
 		{
 			std::unique_lock<std::mutex> lock(chunk_mutex);
@@ -115,33 +168,39 @@ void ChunkManager::worker_loop() {
 
 			if (stop_thread) break; // Exit if the manager is being destroyed
 
+									// Queue size check: Slow down processing if too many chunks are waiting
+			//if (pending_chunks.size() > MAX_QUEUE_SIZE) {
+				//lock.unlock(); // Release the lock before sleeping
+				//std::this_thread::sleep_for(std::chrono::milliseconds(10));
+				//continue; // Re-check the queue
+			//}
+
 			chunk_coords = pending_chunks.front();
 			pending_chunks.pop();
-
 		}
 
-		// Generate chunk outside the locked section
-		Chunk new_chunk(chunk_coords.first, chunk_coords.second);
 		
+		
+		Chunk new_chunk(chunk_coords.first, chunk_coords.second);
 		{
 			std::lock_guard<std::mutex> lock(chunk_mutex);
-			pending_ready_chunks.push(std::move(new_chunk)); // Move the generated chunk to the active list
+			chunks.emplace_back(new_chunk);
 		}
 	}
 }
 
 void ChunkManager::generate_new_chunk(Chunk &chunk) {
-	chunk.remove_heights();
+	//chunk.remove_heights();
 	//chunk.create_mesh();
 }
 
 void ChunkManager::clear_unload_list() {
-	unload_list.clear();
+	//unload_list.clear();
 }
 
 void ChunkManager::generate_chunks() {
 	for (int i = 0; i < ChunkManager::chunks.size(); ++i) {
-		ChunkManager::chunks[i].remove_heights();
+		//ChunkManager::chunks[i].remove_heights();
 		//ChunkManager::chunks[i].create_mesh();
 	}
 }
@@ -151,9 +210,9 @@ void ChunkManager::render_chunks() {
 	glEnable(GL_DEPTH_TEST);  // Ensure depth testing is on
 	glEnable(GL_CULL_FACE);   // Cull back faces for performance
 	glCullFace(GL_BACK);
-
+	std::lock_guard<std::mutex> lock(chunk_mutex);
 	for (int i = 0; i < ChunkManager::chunks.size(); ++i) {
-
+		
 		if (!chunks[i].buffers_initialized) {
 			std::cerr << "Warning: Chunk at (" << chunks[i].chunk_world_xposition
 				<< ", " << chunks[i].chunk_world_zposition
@@ -168,7 +227,29 @@ void ChunkManager::render_chunks() {
 			continue;
 		}
 
+		if (chunks[i].normals.empty()) {
+			std::cerr << "Warning: Chunk at (" << chunks[i].chunk_world_xposition
+				<< ", " << chunks[i].chunk_world_zposition
+				<< ") has no normals!" << std::endl;
+			continue;
+		}
+
+		if (chunks[i].vertices.empty()) {
+			std::cerr << "Warning: Chunk at (" << chunks[i].chunk_world_xposition
+				<< ", " << chunks[i].chunk_world_zposition
+				<< ") has no vertices!" << std::endl;
+			continue;
+		}
+
+		if (chunks[i].colors.empty()) {
+			std::cerr << "Warning: Chunk at (" << chunks[i].chunk_world_xposition
+				<< ", " << chunks[i].chunk_world_zposition
+				<< ") has no colors!" << std::endl;
+			continue;
+		}
+		
 		if (chunks[i].buffers_generated && chunks[i].buffers_initialized && !chunks[i].indices.empty()) {
+			
 			glBindVertexArray(chunks[i].VertexArrayID);
 			glDrawElements(GL_TRIANGLES, chunks[i].indices.size(), GL_UNSIGNED_INT, 0);
 		}
