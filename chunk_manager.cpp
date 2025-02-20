@@ -3,12 +3,7 @@
 #include "chunk.h"
 #include <set>
 
-// Hash function for unordered_set<pair<int, int>>
-struct PairHash {
-	std::size_t operator()(const std::pair<int, int>& p) const {
-		return std::hash<int>()(p.first) ^ (std::hash<int>()(p.second) << 1);
-	}
-};
+
 
 int ChunkManager::CHUNK_SIZE = 16;				//LxWxH of chunk
 int ChunkManager::RENDER_DISTANCE = 4;			//X-Z area of chunks to render around player position
@@ -87,11 +82,11 @@ void ChunkManager::generate_new_visible_chunks(glm::vec3 position) {
 	int number_of_generated_chunks = 0;
 	for (int x = chunk_positionX - RENDER_DISTANCE; x <= chunk_positionX + RENDER_DISTANCE; ++x) {
 		for (int z = chunk_positionZ - RENDER_DISTANCE; z <= chunk_positionZ + RENDER_DISTANCE; ++z) {
-			if (existing_chunks.find({ x, z }) == existing_chunks.end()) {
+			if (existing_chunks.find({ x, z }) == existing_chunks.end() && chunks_to_load_list.find({x,z}) == chunks_to_load_list.end()) {
 				//std::lock_guard<std::mutex> lock(chunk_mutex);
 
-				pending_chunks.push({ x, z });
-			
+				chunks_to_load.push({ x, z });
+				chunks_to_load_list.insert({ x, z });
 			}
 
 		}
@@ -101,7 +96,7 @@ void ChunkManager::generate_new_visible_chunks(glm::vec3 position) {
 	last_z_chunk = chunk_positionZ;
 
 	
-	chunk_cv.notify_one(); // Wake up worker thread
+	 // Wake up worker thread
 	
 }
 
@@ -109,18 +104,23 @@ void ChunkManager::add_pending_chunks() {
 
 	int num_to_process = 2;
 	//move all chunks that are ready to the main chunk list
-	/*
+	
 	{
-		while (num_to_process > 0) {
-			std::lock_guard<std::mutex> lock(chunk_mutex);
-			if (!pending_ready_chunks.empty()) {
-				chunks.emplace_back(std::move(pending_ready_chunks.front()));
-				pending_ready_chunks.pop();
+		while (num_to_process > 0 && !chunks_to_load.empty()) {
+			
+			if (pending_chunks.size() >= 2) {
+				chunk_cv.notify_one();
+				return;
 			}
+			//std::lock_guard<std::mutex> lock(chunk_mutex);
+			pending_chunks.push(chunks_to_load.front());
+			chunks_to_load.pop();
 			num_to_process--;
-		}	
+		}
+		chunks_to_load_list.clear();
+		chunk_cv.notify_one();
 	}
-	*/
+	
 	
 
 }
@@ -168,17 +168,10 @@ void ChunkManager::worker_loop() {
 
 			if (stop_thread) break; // Exit if the manager is being destroyed
 
-									// Queue size check: Slow down processing if too many chunks are waiting
-			//if (pending_chunks.size() > MAX_QUEUE_SIZE) {
-				//lock.unlock(); // Release the lock before sleeping
-				//std::this_thread::sleep_for(std::chrono::milliseconds(10));
-				//continue; // Re-check the queue
-			//}
-
-			chunk_coords = pending_chunks.front();
-			pending_chunks.pop();
+			
 		}
-
+		chunk_coords = pending_chunks.front();
+		pending_chunks.pop();
 		
 		
 		Chunk new_chunk(chunk_coords.first, chunk_coords.second);

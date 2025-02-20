@@ -11,6 +11,13 @@
 #include <algorithm>
 #include <unordered_set>
 
+// Hash function for unordered_set<pair<int, int>>
+struct PairHash {
+	std::size_t operator()(const std::pair<int, int>& p) const {
+		return std::hash<int>()(p.first) ^ (std::hash<int>()(p.second) << 1);
+	}
+};
+
 class ChunkManager {
 
 public:
@@ -34,6 +41,8 @@ public:
 	std::vector<Chunk> chunks;
 	std::queue<int> unload_list;
 	std::queue<Chunk> pending_ready_chunks;
+	std::queue<std::pair<int, int>> chunks_to_load;
+	std::unordered_set<std::pair<int, int>, PairHash> chunks_to_load_list;
 	std::queue<std::pair<int, int>> pending_chunks;
 	std::vector<int> load_list_index;
 

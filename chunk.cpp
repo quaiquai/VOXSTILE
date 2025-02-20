@@ -23,8 +23,8 @@ Chunk::Chunk(int worldx, int worldz) {
 	
 	for (int x = 0; x < CHUNK_SIZE; x++) {
 		for (int z = 0; z < CHUNK_SIZE; z++) {
-			//int height = generate_height(x + absolute_positionX, z + absolute_positionZ);
-			int height = 10;
+			int height = generate_height(x + absolute_positionX, z + absolute_positionZ);
+			//int height = 10;
 			for (int y = 0; y < CHUNK_SIZE; y++) {
 				if (y == height - 1) {
 					blocks.push_back(GRASS);
