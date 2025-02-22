@@ -3,8 +3,15 @@
 
 #include "block.h"
 #include <vector>
+#include <array>
 #include "glad/glad.h"
 #include <iostream>
+
+
+struct Room {
+	int x, y, z, width, height, depth;
+	BlockType type;
+};
 
 class Chunk {
 
@@ -18,9 +25,13 @@ public:
 	Chunk& operator=(Chunk&& other) noexcept;
 	~Chunk();
 
+	void create_cube(int x, int y, int z);
+	void generate_mesh();
+
+	Room generate_room(int chunkX, int chunkY);
+	void carve_room(Room room);
+
 	void create_mesh();
-	void create_cube(int x, int y, int z, int height);
-	void generate_blocks();
 	void generate_buffers();
 
 	static const int CHUNK_SIZE;
@@ -29,6 +40,7 @@ public:
 	int block_number;
 	//Block ***m_pBlocks;
 
+	Room room;
 	int chunk_id;
 	int chunk_world_xposition;
 	int chunk_world_zposition;

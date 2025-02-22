@@ -4,7 +4,7 @@
 #include <iostream>
 
 
-const int Chunk::CHUNK_SIZE = 16;
+const int Chunk::CHUNK_SIZE = 32;
 const int Chunk::NUMBER_OF_CUBE_VERTS = 24;
 
 int Chunk::CHUNK_COUNT = 0;
@@ -20,7 +20,12 @@ Chunk::Chunk(int worldx, int worldz) {
 	blocks_generated = false;
 	block_number = 0;
 	chunk_id = CHUNK_COUNT;
-	
+	blocks.reserve(CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE);
+	// Fill the vector with the desired value
+	blocks.assign(CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE, STONE);
+	room = generate_room(0, 0);
+	carve_room(room);
+	/*
 	for (int x = 0; x < CHUNK_SIZE; x++) {
 		for (int z = 0; z < CHUNK_SIZE; z++) {
 			int height = generate_height(x + absolute_positionX, z + absolute_positionZ);
@@ -32,49 +37,8 @@ Chunk::Chunk(int worldx, int worldz) {
 				if (y < height - 1) {
 					blocks.push_back(STONE);
 				}
-				if (y >= height) {
+				if (y > height-1) {
 					blocks.push_back(INACTIVE);
-				}
-				else {
-					create_cube(x, y, z, height);
-				}
-			}
-		}
-	}
-	
-	//vertices.reserve(Chunk::CHUNK_SIZE * Chunk::CHUNK_SIZE * 256 * 24);
-	//colors.reserve(Chunk::CHUNK_SIZE *Chunk::CHUNK_SIZE *256*24);
-	
-	++CHUNK_COUNT;
-}
-
-Chunk::Chunk(int worldx, int worldz, int test) {
-
-	Chunk::chunk_world_xposition = worldx;
-	Chunk::chunk_world_zposition = worldz;
-	absolute_positionX = CHUNK_SIZE * chunk_world_xposition;
-	absolute_positionZ = CHUNK_SIZE * chunk_world_zposition;
-	buffers_initialized = false;
-	buffers_generated = false;
-	blocks_generated = false;
-	block_number = 0;
-	chunk_id = CHUNK_COUNT;
-	/*
-	for (int x = 0; x < CHUNK_SIZE; x++) {
-		for (int z = 0; z < CHUNK_SIZE; z++) {
-			int height = 10;
-			for (int y = 0; y < CHUNK_SIZE; y++) {
-				if (y == height - 1) {
-					blocks.push_back(GRASS);
-				}
-				if (y < height - 1) {
-					blocks.push_back(STONE);
-				}
-				if (y >= height) {
-					blocks.push_back(INACTIVE);
-				}
-				else {
-					create_cube(x, y, z, height);
 				}
 			}
 		}
@@ -82,7 +46,7 @@ Chunk::Chunk(int worldx, int worldz, int test) {
 	*/
 	//vertices.reserve(Chunk::CHUNK_SIZE * Chunk::CHUNK_SIZE * 256 * 24);
 	//colors.reserve(Chunk::CHUNK_SIZE *Chunk::CHUNK_SIZE *256*24);
-
+	
 	++CHUNK_COUNT;
 }
 
@@ -190,6 +154,70 @@ void Chunk::generate_buffers() {
 	buffers_generated = true;
 }
 
+Room Chunk::generate_room(int chunkX, int chunkZ) {
+	int maxWidth = (CHUNK_SIZE-1) / 2;
+	int maxDepth = (CHUNK_SIZE-1) / 2;
+	int maxHeight = (CHUNK_SIZE-1) / 2;
+
+	int width = 10 + rand() % (maxWidth);
+	int depth = 10 + rand() % (maxDepth);
+	int height = 10 + rand() % (maxHeight);
+
+	int x = rand() % (CHUNK_SIZE-1 - width);
+	int z = rand() % (CHUNK_SIZE-1 - depth);
+	int y = rand() % (CHUNK_SIZE-1 - height);
+	BlockType type = STONE;
+	return { x, y, z, width, height, depth, type };
+}
+
+void Chunk::carve_room(Room room) {
+	for (int x = 0; x < CHUNK_SIZE; ++x) {
+		for (int y = 0; y < CHUNK_SIZE; ++y) {
+			for (int z = 0; z < CHUNK_SIZE; ++z) {
+				// Calculate the 1D index in the chunk array
+				int index = x * CHUNK_SIZE * CHUNK_SIZE + y * CHUNK_SIZE + z;
+
+				// Check if the block is inside the room's boundaries
+				bool insideRoom = (x >= room.x && x < room.x + room.width &&
+					y >= room.y && y < room.y + room.height &&
+					z >= room.z && z < room.z + room.depth);
+
+				// Check if the block is on the immediate border of the room
+				bool onBorder = false;
+				if ((x == room.x - 1 || x == room.x + room.width) &&
+					y >= room.y && y < room.y + room.height &&
+					z >= room.z && z < room.z + room.depth) {
+					onBorder = true;
+				}
+				else if ((y == room.y - 1 || y == room.y + room.height) &&
+					x >= room.x && x < room.x + room.width &&
+					z >= room.z && z < room.z + room.depth) {
+					onBorder = true;
+				}
+				else if ((z == room.z - 1 || z == room.z + room.depth) &&
+					x >= room.x && x < room.x + room.width &&
+					y >= room.y && y < room.y + room.height) {
+					onBorder = true;
+				}
+
+				if (insideRoom) {
+					// Inside the room, set the block as inactive
+					blocks[index] = INACTIVE;
+				}
+				else if (onBorder) {
+					// Border blocks, set the block as stone
+					blocks[index] = STONE;
+				}
+				else {
+					// Outside the room and not bordering, set the block as inactive
+					blocks[index] = INACTIVE;
+				}
+			}
+		}
+	}
+		
+}
+
 
 float Chunk::generate_height(int x, int z) {
 	float n = Noise2D(x * 0.05, z * 0.05);
@@ -199,56 +227,132 @@ float Chunk::generate_height(int x, int z) {
 	return n;
 }
 
-void Chunk::generate_blocks() {
+void Chunk::generate_mesh() {
 	for (int x = 0; x < CHUNK_SIZE; x++) {
-		for (int z = 0; z < CHUNK_SIZE; z++) {
-			int height = 10;
-			for (int y = 0; y < CHUNK_SIZE; y++) {
-				if (y == height - 1) {
-					blocks.push_back(GRASS);
-				}
-				if (y < height - 1) {
-					blocks.push_back(STONE);
-				}
-				if (y >= height) {
-					blocks.push_back(INACTIVE);
-				}
-				else {
-					create_cube(x, y, z, height);
-				}
+		for (int y = 0; y < CHUNK_SIZE; y++) {
+			for (int z = 0; z < CHUNK_SIZE; z++) {
+				create_cube(x, y, z);
 			}
 		}
 	}
 	blocks_generated = true;
 }
 
-
 void Chunk::create_mesh() {
-	for (int x = 0; x < CHUNK_SIZE; x++) {
-		for (int z = 0; z < CHUNK_SIZE; z++) {
-			for (int y = 0; y < CHUNK_SIZE; y++) {
-				//if (!(m_pBlocks[x][y][z].is_active)) {
-					//continue;
-				//}
-				//create_cube(x, y, z);
+	const int CHUNK_VOL = CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE;
+	const int directions[6][3] = { { 1, 0, 0 },{ -1, 0, 0 },{ 0, 1, 0 },
+	{ 0, -1, 0 },{ 0, 0, 1 },{ 0, 0, -1 } };
+
+	for (int d = 0; d < 3; ++d) { // d = 0 (x), d = 1 (y), d = 2 (z)
+		int u = (d + 1) % 3;
+		int v = (d + 2) % 3;
+
+		std::vector<int> mask(CHUNK_SIZE * CHUNK_SIZE);
+
+		for (int slice = 0; slice <= CHUNK_SIZE; ++slice) {
+			std::fill(mask.begin(), mask.end(), -1);
+
+			for (int x = 0; x < CHUNK_SIZE; ++x) {
+				for (int z = 0; z < CHUNK_SIZE; ++z) {
+					int index = x * CHUNK_SIZE + z;
+					int id = -1;
+
+					if (slice < CHUNK_SIZE) {
+						int a[3] = { x, slice, z };
+						int b[3] = { x, slice - 1, z };
+
+						int currBlock = blocks[a[0] * CHUNK_SIZE * CHUNK_SIZE + a[2] * CHUNK_SIZE + a[1]];
+						int prevBlock = (slice > 0) ? blocks[b[0] * CHUNK_SIZE * CHUNK_SIZE + b[2] * CHUNK_SIZE + b[1]] : -1;
+
+						if (currBlock != prevBlock && currBlock != 2) {
+							id = currBlock;
+						}
+					}
+					mask[index] = id;
+				}
+			}
+
+			for (int x = 0; x < CHUNK_SIZE; ++x) {
+				for (int z = 0; z < CHUNK_SIZE; ++z) {
+					int id = mask[x * CHUNK_SIZE + z];
+					if (id == -1) continue;
+
+					int width = 1, height = 1;
+					while (x + width < CHUNK_SIZE && mask[(x + width) * CHUNK_SIZE + z] == id) {
+						width++;
+					}
+					while (z + height < CHUNK_SIZE) {
+						bool valid = true;
+						for (int k = 0; k < width; ++k) {
+							if (mask[(x + k) * CHUNK_SIZE + z + height] != id) {
+								valid = false;
+								break;
+							}
+						}
+						if (!valid) break;
+						height++;
+					}
+
+					for (int i = x; i < x + width; ++i) {
+						for (int j = z; j < z + height; ++j) {
+							mask[i * CHUNK_SIZE + j] = -1;
+						}
+					}
+
+					float normal[3] = { 0.0f, 0.0f, 0.0f };
+					normal[d] = (slice == CHUNK_SIZE) ? -1.0f : 1.0f;
+
+					int a[3] = { x, slice, z };
+					int b[3] = { x + width, slice, z };
+					int c[3] = { x, slice, z + height };
+					int d[3] = { x + width, slice, z + height };
+
+
+					int baseIndex = vertices.size();
+					vertices.insert(vertices.end(), { float(a[0]), float(a[1]), float(a[2]), normal[0], normal[1], normal[2], 1.0f, 1.0f, 1.0f });
+					vertices.insert(vertices.end(), { float(b[0]), float(b[1]), float(b[2]), normal[0], normal[1], normal[2], 1.0f, 1.0f, 1.0f });
+					vertices.insert(vertices.end(), { float(c[0]), float(c[1]), float(c[2]), normal[0], normal[1], normal[2], 1.0f, 1.0f, 1.0f });
+					vertices.insert(vertices.end(), { float(d[0]), float(d[1]), float(d[2]), normal[0], normal[1], normal[2], 1.0f, 1.0f, 1.0f });
+
+					indices.push_back(baseIndex);
+					indices.push_back(baseIndex + 1);
+					indices.push_back(baseIndex + 2);
+					indices.push_back(baseIndex + 2);
+					indices.push_back(baseIndex + 1);
+					indices.push_back(baseIndex + 3);
+				}
 			}
 		}
 	}
 }
 
 
-void Chunk::create_cube(int x, int y, int z, int height) {
 
-	//if this block is covered by other blocks, we should not render
-	//if (x > 0 && x < Chunk::CHUNK_SIZE-1) {
-		//if (z > 0 && z < Chunk::CHUNK_SIZE-1) {
-			if (y >= 0 && y < Chunk::CHUNK_SIZE - 1 && y < height-1) {
-				//if (m_pBlocks[x + 1][y][z].is_active && m_pBlocks[x][y][z + 1].is_active && m_pBlocks[x - 1][y][z].is_active && m_pBlocks[x][y][z - 1].is_active && m_pBlocks[x][y + 1][z].is_active && m_pBlocks[x][y - 1][z].is_active) {
-					return;
-				//}
-			}
-		//}
-	//}
+void Chunk::create_cube(int x, int y, int z) {
+
+	
+	int block_index = x * CHUNK_SIZE * CHUNK_SIZE + y * CHUNK_SIZE + z;
+	if (blocks[block_index] == INACTIVE) {
+		return;
+	}
+	/*
+	int left = (x > 0) ? (blocks[(x - 1) * CHUNK_SIZE * CHUNK_SIZE + z * CHUNK_SIZE + y]) : 2;
+	int right = (x < CHUNK_SIZE - 1) ? (blocks[(x + 1) * CHUNK_SIZE * CHUNK_SIZE + z * CHUNK_SIZE + y]) : 2;
+
+	int below = (y > 0) ? (blocks[x * CHUNK_SIZE * CHUNK_SIZE + z * CHUNK_SIZE + (y-1)]) : -1;
+	int above = (y < CHUNK_SIZE - 1) ? (blocks[x * CHUNK_SIZE * CHUNK_SIZE + z * CHUNK_SIZE + (y+1)]) : 2;
+
+	int back = (z > 0) ? (blocks[x * CHUNK_SIZE * CHUNK_SIZE + (z-1) * CHUNK_SIZE + y]) : -1;
+	int front = (z < CHUNK_SIZE - 1) ? (blocks[x * CHUNK_SIZE * CHUNK_SIZE + (z+1) * CHUNK_SIZE + y]) : 2;
+	if (blocks[block_index] == INACTIVE) {
+		return;
+	}
+	if (left != 2 && right != 2 && below != 2 && above != 2 && back != 2 &&
+		front != 2) {
+		return;
+	}
+	*/
+
 	
 	// Create cube vertices based on block_render_size and x, y, z offsets
 	glm::vec3 p0 = {(x - Block::BLOCK_RENDER_SIZE / 2.0f) + (chunk_world_xposition * Chunk::CHUNK_SIZE), y - Block::BLOCK_RENDER_SIZE / 2.0f, (z + Block::BLOCK_RENDER_SIZE / 2.0f) + (chunk_world_zposition * Chunk::CHUNK_SIZE) };
@@ -292,7 +396,7 @@ void Chunk::create_cube(int x, int y, int z, int height) {
 									  p0.x, p0.y, p0.z }); // Bottom face
 
 	for (int i = 0; i < 24; ++i) {
-		colors.insert(colors.end(), { block_colors[blocks.back()].x, block_colors[blocks.back()].y, block_colors[blocks.back()].z });
+		colors.insert(colors.end(), { block_colors[blocks[block_index]].x, block_colors[blocks[block_index]].y, block_colors[blocks[block_index]].z });
 	}
 
     // Normals for flat shading (6 faces, each with the same normal for 4 vertices)

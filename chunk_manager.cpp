@@ -5,8 +5,8 @@
 
 
 
-int ChunkManager::CHUNK_SIZE = 16;				//LxWxH of chunk
-int ChunkManager::RENDER_DISTANCE = 4;			//X-Z area of chunks to render around player position
+int ChunkManager::CHUNK_SIZE = 32;				//LxWxH of chunk
+int ChunkManager::RENDER_DISTANCE = 1;			//X-Z area of chunks to render around player position
 
 ChunkManager::ChunkManager(glm::vec3 position) {
 	//used for determining if moved of chunk boundaries
@@ -48,7 +48,7 @@ void ChunkManager::spawn_initial_chunks(glm::vec3 position){
 void ChunkManager::fill_chunks() {
 	for (Chunk &c : chunks) {
 		if (!c.blocks_generated) {
-			c.generate_blocks();
+			//c.generate_blocks();
 		}	
 	}
 }
@@ -117,12 +117,9 @@ void ChunkManager::add_pending_chunks() {
 			chunks_to_load.pop();
 			num_to_process--;
 		}
-		chunks_to_load_list.clear();
+		//chunks_to_load_list.clear();
 		chunk_cv.notify_one();
 	}
-	
-	
-
 }
 
 void ChunkManager::remove_unload_chunks() {
@@ -175,6 +172,7 @@ void ChunkManager::worker_loop() {
 		
 		
 		Chunk new_chunk(chunk_coords.first, chunk_coords.second);
+		new_chunk.generate_mesh();
 		{
 			std::lock_guard<std::mutex> lock(chunk_mutex);
 			chunks.emplace_back(new_chunk);
