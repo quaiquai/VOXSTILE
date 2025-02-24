@@ -49,6 +49,18 @@ void Renderer::init_chunk_buffers(Chunk &chunk) {
 		(void*)0                          // array buffer offset
 	);
 
+	glBindBuffer(GL_ARRAY_BUFFER, chunk.texture_buffer);
+	glBufferData(GL_ARRAY_BUFFER, chunk.tex_coords.size() * sizeof(float), &chunk.tex_coords[0], GL_STATIC_DRAW);
+	glEnableVertexAttribArray(3);
+	glVertexAttribPointer(
+		3,                                // attribute
+		3,                                // size
+		GL_FLOAT,                         // type
+		GL_FALSE,                         // normalized?
+		0,                                // stride
+		(void*)0                          // array buffer offset
+	);
+
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, chunk.IndexBuffer);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, chunk.indices.size() * sizeof(int), &chunk.indices[0], GL_STATIC_DRAW);
 
@@ -93,6 +105,18 @@ void Renderer::initChunkBuffers(ChunkManager &chunks) {
 			glEnableVertexAttribArray(2);
 			glVertexAttribPointer(
 				2,                                // attribute
+				3,                                // size
+				GL_FLOAT,                         // type
+				GL_FALSE,                         // normalized?
+				0,                                // stride
+				(void*)0                          // array buffer offset
+			);
+
+			glBindBuffer(GL_ARRAY_BUFFER, chunks.chunks[i].texture_buffer);
+			glBufferData(GL_ARRAY_BUFFER, chunks.chunks[i].tex_coords.size() * sizeof(float), &chunks.chunks[i].tex_coords[0], GL_STATIC_DRAW);
+			glEnableVertexAttribArray(3);
+			glVertexAttribPointer(
+				3,                                // attribute
 				3,                                // size
 				GL_FLOAT,                         // type
 				GL_FALSE,                         // normalized?

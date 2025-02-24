@@ -25,6 +25,7 @@ Chunk::Chunk(int worldx, int worldz) {
 	blocks.assign(CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE, STONE);
 	room = generate_room(0, 0);
 	carve_room(room);
+	prev_room = nullptr;
 	/*
 	for (int x = 0; x < CHUNK_SIZE; x++) {
 		for (int z = 0; z < CHUNK_SIZE; z++) {
@@ -56,6 +57,7 @@ Chunk::Chunk(const Chunk &c) {
 	normalBuffer = c.normalBuffer;
 	colorBuffer = c.colorBuffer;
 	IndexBuffer = c.IndexBuffer;
+	texture_buffer = c.texture_buffer;
 	chunk_world_xposition = c.chunk_world_xposition;
 	chunk_world_zposition = c.chunk_world_zposition;
 	absolute_positionX = CHUNK_SIZE * chunk_world_xposition;
@@ -68,6 +70,7 @@ Chunk::Chunk(const Chunk &c) {
 	colors = c.colors;
 	normals = c.normals;
 	indices = c.indices;
+	tex_coords = c.tex_coords;
 	block_number = c.block_number;
 	chunk_id = c.chunk_id;
 
@@ -79,6 +82,7 @@ Chunk::Chunk(Chunk&& other) noexcept
 	normalBuffer(other.normalBuffer),
 	colorBuffer(other.colorBuffer),
 	IndexBuffer(other.IndexBuffer),
+	texture_buffer(other.texture_buffer),
 	chunk_world_xposition(other.chunk_world_xposition),
 	chunk_world_zposition(other.chunk_world_zposition),
 	absolute_positionX(other.absolute_positionX),
@@ -86,10 +90,10 @@ Chunk::Chunk(Chunk&& other) noexcept
 	buffers_initialized(other.buffers_initialized),
 	buffers_generated(other.buffers_generated),
 	blocks_generated(other.blocks_generated),
-	//m_pBlocks(other.m_pBlocks), // Move ownership of dynamic array
 	block_number(other.block_number),
 	chunk_id(other.chunk_id),
 	vertices(std::move(other.vertices)),
+	tex_coords(std::move(other.tex_coords)),
 	colors(std::move(other.colors)),
 	normals(std::move(other.normals)),
 	indices(std::move(other.indices)),
@@ -101,14 +105,13 @@ Chunk::Chunk(Chunk&& other) noexcept
 	other.normalBuffer = 0;
 	other.IndexBuffer = 0;
 	other.colorBuffer = 0;
-	// Invalidate other's resources to prevent double deletion
-	//other.m_pBlocks = nullptr;
+	other.texture_buffer = 0;
+	
 }
 
 Chunk& Chunk::operator=(Chunk&& other) noexcept {
 	if (this != &other) {  // Prevent self-assignment
 						   // Free existing dynamically allocated resources
-		//delete[] m_pBlocks;
 
 		// Move data from `other`
 		VertexArrayID = other.VertexArrayID;
@@ -116,6 +119,7 @@ Chunk& Chunk::operator=(Chunk&& other) noexcept {
 		normalBuffer = other.normalBuffer;
 		colorBuffer = other.colorBuffer;
 		IndexBuffer = other.IndexBuffer;
+		texture_buffer = other.texture_buffer;
 		chunk_world_xposition = other.chunk_world_xposition;
 		chunk_world_zposition = other.chunk_world_zposition;
 		absolute_positionX = other.absolute_positionX;
@@ -125,9 +129,7 @@ Chunk& Chunk::operator=(Chunk&& other) noexcept {
 		buffers_initialized = other.buffers_initialized;
 		buffers_generated = other.buffers_generated;
 		blocks_generated = other.blocks_generated;
-		// Move ownership of dynamically allocated array
-		//m_pBlocks = other.m_pBlocks;
-		//other.m_pBlocks = nullptr; // Ensure the moved-from object is safe
+	
 
 								   // Move STL containers
 		vertices = std::move(other.vertices);
@@ -135,12 +137,14 @@ Chunk& Chunk::operator=(Chunk&& other) noexcept {
 		normals = std::move(other.normals);
 		indices = std::move(other.indices);
 		blocks = std::move(other.blocks);
+		tex_coords = std::move(other.tex_coords);
 		
 		other.VertexArrayID = 0;
 		other.vertex_buffer = 0;
 		other.normalBuffer = 0;
 		other.IndexBuffer = 0;
 		other.colorBuffer = 0;
+		other.texture_buffer = 0;
 	}
 	return *this;
 }
@@ -151,7 +155,17 @@ void Chunk::generate_buffers() {
 	glGenBuffers(1, &normalBuffer);
 	glGenBuffers(1, &colorBuffer);
 	glGenBuffers(1, &IndexBuffer);
+	glGenBuffers(1, &texture_buffer);
+	//glGenTextures(1, &textureID);
 	buffers_generated = true;
+}
+
+void Chunk::generate_hallways(Room prevroom) {
+	int x1 = prevroom.x + prevroom.width / 2, z1 = prevroom.z + prevroom.depth / 2;
+	int x2 = room.x + room.width / 2, z2 = room.z + room.depth / 2;
+	int y = room.y;
+	while (CHUNK_SIZE * x1 != CHUNK_SIZE *  x2) { blocks[x1*CHUNK_SIZE*CHUNK_SIZE + y * CHUNK_SIZE + z1] = GRASS; x1 += (CHUNK_SIZE *x1 < CHUNK_SIZE *x2) ? 1 : -1; }
+	while (CHUNK_SIZE *z1 != CHUNK_SIZE * z2) { blocks[x1*CHUNK_SIZE*CHUNK_SIZE + y * CHUNK_SIZE + z1] = GRASS; z1 += (CHUNK_SIZE *z1 < CHUNK_SIZE *z2) ? 1 : -1; }
 }
 
 Room Chunk::generate_room(int chunkX, int chunkZ) {
@@ -198,6 +212,10 @@ void Chunk::carve_room(Room room) {
 					x >= room.x && x < room.x + room.width &&
 					y >= room.y && y < room.y + room.height) {
 					onBorder = true;
+				}
+
+				if (blocks[index] == GRASS) {
+					continue;
 				}
 
 				if (insideRoom) {
@@ -398,6 +416,58 @@ void Chunk::create_cube(int x, int y, int z) {
 	for (int i = 0; i < 24; ++i) {
 		colors.insert(colors.end(), { block_colors[blocks[block_index]].x, block_colors[blocks[block_index]].y, block_colors[blocks[block_index]].z });
 	}
+
+	float texLayer = 0;  // Normalize layer index (0 to 1)
+	//float texLayer = blockType / float(numLayers - 1);  // Normalize layer index (0 to 1)
+
+														// Front face
+														// Front face
+	tex_coords.insert(tex_coords.end(), {
+		0.0f, 0.0f, texLayer,  // bottom-left
+		1.0f, 0.0f, texLayer,  // bottom-right
+		1.0f, 1.0f, texLayer,  // top-right
+		0.0f, 1.0f, texLayer   // top-left
+		});
+
+	// Back face
+	tex_coords.insert(tex_coords.end(), {
+		0.0f, 0.0f, texLayer,  // bottom-left
+		1.0f, 0.0f, texLayer,  // bottom-right
+		1.0f, 1.0f, texLayer,  // top-right
+		0.0f, 1.0f, texLayer   // top-left
+		});
+
+	// Left face
+	tex_coords.insert(tex_coords.end(), {
+		0.0f, 0.0f, texLayer,  // bottom-left
+		1.0f, 0.0f, texLayer,  // bottom-right
+		1.0f, 1.0f, texLayer,  // top-right
+		0.0f, 1.0f, texLayer   // top-left
+		});
+
+	// Right face
+	tex_coords.insert(tex_coords.end(), {
+		0.0f, 0.0f, texLayer,  // bottom-left
+		1.0f, 0.0f, texLayer,  // bottom-right
+		1.0f, 1.0f, texLayer,  // top-right
+		0.0f, 1.0f, texLayer   // top-left
+		});
+
+	// Top face
+	tex_coords.insert(tex_coords.end(), {
+		0.0f, 0.0f, texLayer,  // bottom-left
+		1.0f, 0.0f, texLayer,  // bottom-right
+		1.0f, 1.0f, texLayer,  // top-right
+		0.0f, 1.0f, texLayer   // top-left
+		});
+
+	// Bottom face
+	tex_coords.insert(tex_coords.end(), {
+		0.0f, 0.0f, texLayer,  // bottom-left
+		1.0f, 0.0f, texLayer,  // bottom-right
+		1.0f, 1.0f, texLayer,  // top-right
+		0.0f, 1.0f, texLayer   // top-left
+		});
 
     // Normals for flat shading (6 faces, each with the same normal for 4 vertices)
 	// Front face normal

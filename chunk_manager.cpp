@@ -118,7 +118,7 @@ void ChunkManager::add_pending_chunks() {
 			num_to_process--;
 		}
 		//chunks_to_load_list.clear();
-		chunk_cv.notify_one();
+		//chunk_cv.notify_one();
 	}
 }
 
@@ -142,15 +142,9 @@ void ChunkManager::update_visible_chunks(glm::vec3 position) {
 
 	generate_new_visible_chunks(position);
 	
-	
-	
-	
-
-	
-
-
-	
 }
+
+
 
 void ChunkManager::worker_loop() {
 	while (!stop_thread) {
@@ -172,7 +166,12 @@ void ChunkManager::worker_loop() {
 		
 		
 		Chunk new_chunk(chunk_coords.first, chunk_coords.second);
+		if (!rooms.empty()) {
+			new_chunk.generate_hallways(rooms.back());
+		}
+		rooms.push_back(new_chunk.room);
 		new_chunk.generate_mesh();
+		
 		{
 			std::lock_guard<std::mutex> lock(chunk_mutex);
 			chunks.emplace_back(new_chunk);

@@ -30,6 +30,7 @@ public:
 
 	Room generate_room(int chunkX, int chunkY);
 	void carve_room(Room room);
+	void generate_hallways(Room room);
 
 	void create_mesh();
 	void generate_buffers();
@@ -41,6 +42,7 @@ public:
 	//Block ***m_pBlocks;
 
 	Room room;
+	Room* prev_room;
 	int chunk_id;
 	int chunk_world_xposition;
 	int chunk_world_zposition;
@@ -54,11 +56,14 @@ public:
 	GLuint normalBuffer;
 	GLuint colorBuffer;
 	GLuint IndexBuffer;
+	GLuint texture_buffer;
+	GLuint textureID;
 	float generate_height(int x, int z);
 	std::vector<float> vertices;
 	std::vector<int> indices;
 	std::vector<float> normals;
 	std::vector<float> colors;
+	std::vector<float> tex_coords;
 	std::vector<BlockType> blocks;
 };
 

@@ -39,6 +39,7 @@ public:
 	bool stop_thread = false;
 
 	std::vector<Chunk> chunks;
+	std::vector<Room> rooms;
 	std::queue<int> unload_list;
 	std::queue<Chunk> pending_ready_chunks;
 	std::queue<std::pair<int, int>> chunks_to_load;
@@ -59,7 +60,6 @@ public:
 	void add_pending_chunks();
 	void remove_unload_chunks();
 	void fill_chunks();
-	void remove_objects();
 	void generate_chunks();
 	void render_chunks();
 	void worker_loop(); // Background thread function
