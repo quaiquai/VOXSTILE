@@ -17,7 +17,7 @@ void main(){
 	float specularStrength = 0.5;
 	vec3 ambient = vec3(0.2, 0.2, 0.2);
 	//vec3 norm = normalize(v_normal);
-	vec3 norm = texture(texture3D, vec3(TexCoords.xy, 1.0)).rgb;
+	vec3 norm = texture(texture3D, vec3(TexCoords.rg, 1.0)).rgb;
 	norm = normalize(norm*2.0 - 1.0);
 	vec3 lightDir = normalize(lightPosition - fragPos);
 	vec3 viewDir = normalize(viewPos - fragPos);
@@ -26,6 +26,7 @@ void main(){
 	vec3 specular = specularStrength * specularCoef * lightColor;
 	float diffCoef = max(dot(norm, lightDir), 0.0);
 	vec3 diffuse = diffCoef * lightColor;
+	//color = vec4((ambient + diffuse + specular) * fragmentColor, 1.0);
 	color = vec4((ambient + diffuse + specular) * texture(texture3D, TexCoords).rgb, 1.0);
 	//color = texture(texture3D, TexCoords);
 }
