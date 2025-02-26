@@ -16,7 +16,9 @@ void main(){
 	//vec3 normalColor = fragmentColor * 0.5 + 0.5;
 	float specularStrength = 0.5;
 	vec3 ambient = vec3(0.2, 0.2, 0.2);
-	vec3 norm = normalize(v_normal);
+	//vec3 norm = normalize(v_normal);
+	vec3 norm = texture(texture3D, vec3(TexCoords.xy, 1.0)).rgb;
+	norm = normalize(norm*2.0 - 1.0);
 	vec3 lightDir = normalize(lightPosition - fragPos);
 	vec3 viewDir = normalize(viewPos - fragPos);
 	vec3 reflectDir = reflect(-lightDir, norm); //negate for incoming light
