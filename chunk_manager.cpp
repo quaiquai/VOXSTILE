@@ -10,8 +10,8 @@ int ChunkManager::RENDER_DISTANCE = 1;			//X-Z area of chunks to render around p
 
 ChunkManager::ChunkManager(glm::vec3 position) {
 	//used for determining if moved of chunk boundaries
-	last_x_chunk = 0;
-	last_z_chunk = 0;
+	last_x_chunk = 1000;
+	last_z_chunk = 1000;
 	//can use for limiting updates dependent on frames
 	frame_counter = 0;
 	update_interval = 5;
@@ -199,7 +199,7 @@ void ChunkManager::render_chunks() {
 	
 	glEnable(GL_DEPTH_TEST);  // Ensure depth testing is on
 	glEnable(GL_CULL_FACE);   // Cull back faces for performance
-	glCullFace(GL_BACK);
+	//glCullFace(GL_BACK);
 	std::lock_guard<std::mutex> lock(chunk_mutex);
 	for (int i = 0; i < ChunkManager::chunks.size(); ++i) {
 		
@@ -231,10 +231,10 @@ void ChunkManager::render_chunks() {
 			continue;
 		}
 
-		if (chunks[i].colors.empty()) {
+		if (chunks[i].tangents.empty()) {
 			std::cerr << "Warning: Chunk at (" << chunks[i].chunk_world_xposition
 				<< ", " << chunks[i].chunk_world_zposition
-				<< ") has no colors!" << std::endl;
+				<< ") has no tangents!" << std::endl;
 			continue;
 		}
 		

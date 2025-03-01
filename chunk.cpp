@@ -56,6 +56,8 @@ Chunk::Chunk(const Chunk &c) {
 	vertex_buffer = c.vertex_buffer;
 	normalBuffer = c.normalBuffer;
 	colorBuffer = c.colorBuffer;
+	tangent_buffer = c.tangent_buffer;
+	bitangent_buffer = c.bitangent_buffer;
 	IndexBuffer = c.IndexBuffer;
 	texture_buffer = c.texture_buffer;
 	chunk_world_xposition = c.chunk_world_xposition;
@@ -70,6 +72,8 @@ Chunk::Chunk(const Chunk &c) {
 	colors = c.colors;
 	normals = c.normals;
 	indices = c.indices;
+	tangents = c.tangents;
+	bitangents = c.bitangents;
 	tex_coords = c.tex_coords;
 	block_number = c.block_number;
 	chunk_id = c.chunk_id;
@@ -82,6 +86,8 @@ Chunk::Chunk(Chunk&& other) noexcept
 	normalBuffer(other.normalBuffer),
 	colorBuffer(other.colorBuffer),
 	IndexBuffer(other.IndexBuffer),
+	tangent_buffer(other.tangent_buffer),
+	bitangent_buffer(other.bitangent_buffer),
 	texture_buffer(other.texture_buffer),
 	chunk_world_xposition(other.chunk_world_xposition),
 	chunk_world_zposition(other.chunk_world_zposition),
@@ -97,6 +103,8 @@ Chunk::Chunk(Chunk&& other) noexcept
 	colors(std::move(other.colors)),
 	normals(std::move(other.normals)),
 	indices(std::move(other.indices)),
+	tangents(std::move(other.tangents)),
+	bitangents(std::move(other.bitangents)),
 	blocks(std::move(other.blocks)){
 
 	
@@ -106,6 +114,8 @@ Chunk::Chunk(Chunk&& other) noexcept
 	other.IndexBuffer = 0;
 	other.colorBuffer = 0;
 	other.texture_buffer = 0;
+	other.tangent_buffer = 0;
+	other.bitangent_buffer = 0;
 	
 }
 
@@ -119,6 +129,8 @@ Chunk& Chunk::operator=(Chunk&& other) noexcept {
 		normalBuffer = other.normalBuffer;
 		colorBuffer = other.colorBuffer;
 		IndexBuffer = other.IndexBuffer;
+		tangent_buffer = other.tangent_buffer;
+		bitangent_buffer = other.bitangent_buffer;
 		texture_buffer = other.texture_buffer;
 		chunk_world_xposition = other.chunk_world_xposition;
 		chunk_world_zposition = other.chunk_world_zposition;
@@ -137,6 +149,8 @@ Chunk& Chunk::operator=(Chunk&& other) noexcept {
 		normals = std::move(other.normals);
 		indices = std::move(other.indices);
 		blocks = std::move(other.blocks);
+		tangents = std::move(other.tangents);
+		bitangents = std::move(other.bitangents);
 		tex_coords = std::move(other.tex_coords);
 		
 		other.VertexArrayID = 0;
@@ -145,6 +159,8 @@ Chunk& Chunk::operator=(Chunk&& other) noexcept {
 		other.IndexBuffer = 0;
 		other.colorBuffer = 0;
 		other.texture_buffer = 0;
+		other.tangent_buffer = 0;
+		other.bitangent_buffer = 0;
 	}
 	return *this;
 }
@@ -156,6 +172,8 @@ void Chunk::generate_buffers() {
 	glGenBuffers(1, &colorBuffer);
 	glGenBuffers(1, &IndexBuffer);
 	glGenBuffers(1, &texture_buffer);
+	glGenBuffers(1, &tangent_buffer);
+	glGenBuffers(1, &bitangent_buffer);
 	//glGenTextures(1, &textureID);
 	buffers_generated = true;
 }
@@ -224,7 +242,11 @@ void Chunk::carve_room(Room room) {
 				}
 				else if (onBorder) {
 					// Border blocks, set the block as stone
-					blocks[index] = STONE;
+					if ((z == 12 || z== 13 ||z==14) && y > room.height) {
+						blocks[index] = INACTIVE;
+					}
+				
+					
 				}
 				else {
 					// Outside the room and not bordering, set the block as inactive
@@ -342,6 +364,30 @@ void Chunk::create_mesh() {
 			}
 		}
 	}
+}
+
+// Function to calculate tangent and bitangent for a triangle
+void Chunk::calculate_tangent_bitangent(
+	const glm::vec3& v0, const glm::vec3& v1, const glm::vec3& v2,
+	const glm::vec2& uv0, const glm::vec2& uv1, const glm::vec2& uv2,
+	glm::vec3& tangent, glm::vec3& bitangent) {
+
+	glm::vec3 edge1 = v1 - v0;
+	glm::vec3 edge2 = v2 - v0;
+	glm::vec2 deltaUV1 = uv1 - uv0;
+	glm::vec2 deltaUV2 = uv2 - uv0;
+
+	float f = 1.0f / (deltaUV1.x * deltaUV2.y - deltaUV2.x * deltaUV1.y);
+
+	tangent.x = f * (deltaUV2.y * edge1.x - deltaUV1.y * edge2.x);
+	tangent.y = f * (deltaUV2.y * edge1.y - deltaUV1.y * edge2.y);
+	tangent.z = f * (deltaUV2.y * edge1.z - deltaUV1.y * edge2.z);
+	tangent = glm::normalize(tangent);
+
+	bitangent.x = f * (-deltaUV2.x * edge1.x + deltaUV1.x * edge2.x);
+	bitangent.y = f * (-deltaUV2.x * edge1.y + deltaUV1.x * edge2.y);
+	bitangent.z = f * (-deltaUV2.x * edge1.z + deltaUV1.x * edge2.z);
+	bitangent = glm::normalize(bitangent);
 }
 
 
@@ -526,6 +572,79 @@ void Chunk::create_cube(int x, int y, int z) {
 		baseVertexIndex + 20, baseVertexIndex + 21, baseVertexIndex + 22,
 		baseVertexIndex + 20, baseVertexIndex + 22, baseVertexIndex + 23
 	});
+
+
+	auto calculateTangents = [](const glm::vec3& v0, const glm::vec3& v1, const glm::vec3& v2, const glm::vec2& uv0, const glm::vec2& uv1, const glm::vec2& uv2) {
+		glm::vec3 edge1 = v1 - v0;
+		glm::vec3 edge2 = v2 - v0;
+		glm::vec2 deltaUV1 = uv1 - uv0;
+		glm::vec2 deltaUV2 = uv2 - uv0;
+
+		float f = 1.0f / (deltaUV1.x * deltaUV2.y - deltaUV2.x * deltaUV1.y);
+
+		glm::vec3 tangent;
+		tangent.x = f * (deltaUV2.y * edge1.x - deltaUV1.y * edge2.x);
+		tangent.y = f * (deltaUV2.y * edge1.y - deltaUV1.y * edge2.y);
+		tangent.z = f * (deltaUV2.y * edge1.z - deltaUV1.y * edge2.z);
+		//tangent = glm::normalize(tangent);
+
+		glm::vec3 bitangent;
+		bitangent.x = f * (-deltaUV2.x * edge1.x + deltaUV1.x * edge2.x);
+		bitangent.y = f * (-deltaUV2.x * edge1.y + deltaUV1.x * edge2.y);
+		bitangent.z = f * (-deltaUV2.x * edge1.z + deltaUV1.x * edge2.z);
+		//bitangent = glm::normalize(bitangent);
+
+		return std::make_pair(tangent, bitangent);
+	};
+
+	// Function to insert tangents and bitangents for a triangle
+	auto insertTangentsAndBitangents = [&](const glm::vec3& tangent, const glm::vec3& bitangent, int count) {
+		for (int i = 0; i < count; ++i) {
+			tangents.insert(tangents.end(), { tangent.x, tangent.y, tangent.z });
+			bitangents.insert(bitangents.end(), { bitangent.x, bitangent.y, bitangent.z });
+		}
+	};
+
+	// Calculate tangents and bitangents for each triangle of each face
+		// Front face (two triangles: 0-1-2 and 0-2-3)
+	
+	{
+		auto tb = calculateTangents(p0, p1, p2,{ 0.0f, 0.0f },{ 1.0f, 0.0f },{ 1.0f, 1.0f });
+
+		insertTangentsAndBitangents(tb.first, tb.second, 4); // For triangle 0-1-2
+	}
+
+		// Back face (two triangles: 4-5-6 and 4-6-7)
+	{
+		auto tb = calculateTangents(p4, p5, p6, { 0.0f, 0.0f }, { 1.0f, 0.0f }, { 1.0f, 1.0f });
+		insertTangentsAndBitangents(tb.first, tb.second, 4); // For triangle 4-5-6
+	}
+
+	// Left face (two triangles: 5-0-3 and 5-3-6)
+	{
+		auto tb = calculateTangents(p5, p0, p3, { 0.0f, 0.0f }, { 1.0f, 0.0f }, { 1.0f, 1.0f });
+		insertTangentsAndBitangents(tb.first, tb.second, 4); // For triangle 5-0-3
+	}
+
+	// Right face (two triangles: 1-4-7 and 1-7-2)
+	{
+		auto tb = calculateTangents(p1, p4, p7, { 0.0f, 0.0f }, { 1.0f, 0.0f }, { 1.0f, 1.0f });
+		insertTangentsAndBitangents(tb.first, tb.second, 4); // For triangle 1-4-7
+	}
+
+	// Top face (two triangles: 3-2-7 and 3-7-6)
+	{
+		auto tb = calculateTangents(p3, p2, p7, { 0.0f, 0.0f }, { 1.0f, 0.0f }, { 1.0f, 1.0f });
+		insertTangentsAndBitangents(tb.first, tb.second, 4); // For triangle 3-2-7
+	}
+
+	// Bottom face (two triangles: 5-4-1 and 5-1-0)
+	{
+		auto tb = calculateTangents(p5, p4, p1, { 0.0f, 0.0f }, { 1.0f, 0.0f }, { 1.0f, 1.0f });
+		insertTangentsAndBitangents(tb.first, tb.second, 4); // For triangle 5-4-1
+	}
+
+
 	++block_number;
 }
 
@@ -538,6 +657,8 @@ Chunk::~Chunk() {
 		glDeleteBuffers(1, &normalBuffer);
 		glDeleteBuffers(1, &colorBuffer);
 		glDeleteBuffers(1, &IndexBuffer);
+		glDeleteBuffers(1, &texture_buffer);
+		glDeleteBuffers(1, &bitangent_buffer);
 		glDeleteVertexArrays(1, &VertexArrayID);
 	}
 	

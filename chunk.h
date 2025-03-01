@@ -35,6 +35,11 @@ public:
 	void create_mesh();
 	void generate_buffers();
 
+	void calculate_tangent_bitangent(
+		const glm::vec3& v0, const glm::vec3& v1, const glm::vec3& v2,
+		const glm::vec2& uv0, const glm::vec2& uv1, const glm::vec2& uv2,
+		glm::vec3& tangent, glm::vec3& bitangent);
+
 	static const int CHUNK_SIZE;
 	static const int NUMBER_OF_CUBE_VERTS;
 	static int CHUNK_COUNT;
@@ -57,7 +62,8 @@ public:
 	GLuint colorBuffer;
 	GLuint IndexBuffer;
 	GLuint texture_buffer;
-	GLuint textureID;
+	GLuint tangent_buffer;
+	GLuint bitangent_buffer;
 	float generate_height(int x, int z);
 	std::vector<float> vertices;
 	std::vector<int> indices;
@@ -65,6 +71,11 @@ public:
 	std::vector<float> colors;
 	std::vector<float> tex_coords;
 	std::vector<BlockType> blocks;
+
+	std::vector<float> tangents;
+	std::vector<float> bitangents;
+	std::vector<float> flatTangents;
+	std::vector<float> flatBitangents;
 };
 
 

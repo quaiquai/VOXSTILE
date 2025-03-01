@@ -124,6 +124,30 @@ void Renderer::initChunkBuffers(ChunkManager &chunks) {
 				(void*)0                          // array buffer offset
 			);
 
+			glBindBuffer(GL_ARRAY_BUFFER, chunks.chunks[i].tangent_buffer);
+			glBufferData(GL_ARRAY_BUFFER, chunks.chunks[i].tangents.size() * sizeof(float), &chunks.chunks[i].tangents[0], GL_STATIC_DRAW);
+			glEnableVertexAttribArray(4);
+			glVertexAttribPointer(
+				4,                                // attribute
+				3,                                // size
+				GL_FLOAT,                         // type
+				GL_FALSE,                         // normalized?
+				0,                                // stride
+				(void*)0                          // array buffer offset
+			);
+
+			glBindBuffer(GL_ARRAY_BUFFER, chunks.chunks[i].bitangent_buffer);
+			glBufferData(GL_ARRAY_BUFFER, chunks.chunks[i].bitangents.size() * sizeof(float), &chunks.chunks[i].bitangents[0], GL_STATIC_DRAW);
+			glEnableVertexAttribArray(5);
+			glVertexAttribPointer(
+				5,                                // attribute
+				3,                                // size
+				GL_FLOAT,                         // type
+				GL_FALSE,                         // normalized?
+				0,                                // stride
+				(void*)0                          // array buffer offset
+			);
+
 			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, chunks.chunks[i].IndexBuffer);
 			glBufferData(GL_ELEMENT_ARRAY_BUFFER, chunks.chunks[i].indices.size() * sizeof(int), &chunks.chunks[i].indices[0], GL_STATIC_DRAW);
 
