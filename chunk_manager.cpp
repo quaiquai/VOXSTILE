@@ -198,7 +198,7 @@ void ChunkManager::generate_chunks() {
 void ChunkManager::render_chunks() {
 	
 	glEnable(GL_DEPTH_TEST);  // Ensure depth testing is on
-	glEnable(GL_CULL_FACE);   // Cull back faces for performance
+	//glEnable(GL_CULL_FACE);   // Cull back faces for performance
 	//glCullFace(GL_BACK);
 	std::lock_guard<std::mutex> lock(chunk_mutex);
 	for (int i = 0; i < ChunkManager::chunks.size(); ++i) {
