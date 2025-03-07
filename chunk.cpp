@@ -470,49 +470,49 @@ void Chunk::create_cube(int x, int y, int z) {
 														// Front face
 	tex_coords.insert(tex_coords.end(), {
 		0.0f, 0.0f, texLayer,  // bottom-left
-		0.25f, 0.0f, texLayer,  // bottom-right
-		0.25f, 0.25f, texLayer,  // top-right
-		0.0f, 0.25f, texLayer   // top-left
+		0.5f, 0.0f, texLayer,  // bottom-right
+		0.5f, 0.5f, texLayer,  // top-right
+		0.0f, 0.5f, texLayer   // top-left
 		});
 
 	// Back face
 	tex_coords.insert(tex_coords.end(), {
 		0.0f, 0.0f, texLayer,  // bottom-left
-		0.25f, 0.0f, texLayer,  // bottom-right
-		0.25f, 0.25f, texLayer,  // top-right
-		0.0f, 0.25f, texLayer   // top-left
+		0.5f, 0.0f, texLayer,  // bottom-right
+		0.5f, 0.5f, texLayer,  // top-right
+		0.0f, 0.5f, texLayer   // top-left
 		});
 
 	// Left face
 	tex_coords.insert(tex_coords.end(), {
 		0.0f, 0.0f, texLayer,  // bottom-left
-		0.25f, 0.0f, texLayer,  // bottom-right
-		0.25f, 0.25f, texLayer,  // top-right
-		0.0f, 0.25f, texLayer   // top-left
+		0.5f, 0.0f, texLayer,  // bottom-right
+		0.5f, 0.5f, texLayer,  // top-right
+		0.0f, 0.5f, texLayer   // top-left
 		});
 
 	// Right face
 	tex_coords.insert(tex_coords.end(), {
 		0.0f, 0.0f, texLayer,  // bottom-left
-		0.25f, 0.0f, texLayer,  // bottom-right
-		0.25f, 0.25f, texLayer,  // top-right
-		0.0f, 0.25f, texLayer   // top-left
+		0.5f, 0.0f, texLayer,  // bottom-right
+		0.5f, 0.5f, texLayer,  // top-right
+		0.0f, 0.5f, texLayer   // top-left
 		});
 
 	// Top face
 	tex_coords.insert(tex_coords.end(), {
 		0.0f, 0.0f, texLayer,  // bottom-left
-		0.25f, 0.0f, texLayer,  // bottom-right
-		0.25f, 0.25f, texLayer,  // top-right
-		0.0f, 0.25f, texLayer   // top-left
+		0.5f, 0.0f, texLayer,  // bottom-right
+		0.5f, 0.5f, texLayer,  // top-right
+		0.0f, 0.5f, texLayer   // top-left
 		});
 
 	// Bottom face
 	tex_coords.insert(tex_coords.end(), {
 		0.0f, 0.0f, texLayer,  // bottom-left
-		0.25f, 0.0f, texLayer,  // bottom-right
-		0.25f, 0.25f, texLayer,  // top-right
-		0.0f, 0.25f, texLayer   // top-left
+		0.5f, 0.0f, texLayer,  // bottom-right
+		0.5f, 0.5f, texLayer,  // top-right
+		0.0f, 0.5f, texLayer   // top-left
 		});
 
     // Normals for flat shading (6 faces, each with the same normal for 4 vertices)

@@ -81,7 +81,7 @@ void main(){
 
 	// Sample the roughness map (grayscale, so we take the red channel)
 	float roughness = texture(texture3D, vec3(TexCoords.rg, 2.0)).r;
-	float specularStrength = step(0.3, roughness) * 5;
+	float specularStrength = step(0.01, roughness) * 10;
 	
 	float ambientOcclusion = texture(texture3D, vec3(TexCoords.rg, 3.0)).r; // AO values are in [0,1]
 	vec3 ambientColor = vec3(0.4, 0.3, 0.2); // Soft, neutral ambient light										 
