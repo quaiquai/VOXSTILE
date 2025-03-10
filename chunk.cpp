@@ -24,8 +24,6 @@ Chunk::Chunk(int worldx, int worldz) {
 	blocks.reserve(CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE);
 	// Fill the vector with the desired value
 	blocks.assign(CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE, STONE);
-	//room = Generators::generate_room(CHUNK_SIZE);
-	//Generators::carve_room(room, CHUNK_SIZE, blocks);
 	prev_room = nullptr;
 	/*
 	for (int x = 0; x < CHUNK_SIZE; x++) {

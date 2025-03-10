@@ -9,6 +9,8 @@ int ChunkManager::CHUNK_SIZE = 32;				//LxWxH of chunk
 int ChunkManager::RENDER_DISTANCE = 1;			//X-Z area of chunks to render around player position
 
 ChunkManager::ChunkManager(glm::vec3 position) {
+	//for logging
+	total_verts = 0;
 	//used for determining if moved of chunk boundaries
 	last_x_chunk = 1000;
 	last_z_chunk = 1000;
@@ -172,11 +174,16 @@ void ChunkManager::worker_loop() {
 		rooms.push_back(new_chunk.room);
 		Generators::generate_poolroom(new_chunk);
 		Generators::carve_room(new_chunk);
+		//int stairX = new_chunk.room.x + rand() % (new_chunk.room.width - 5);
+		//int stairZ = new_chunk.room.z + rand() % (new_chunk.room.depth - 5);
+		//Generators::generate_stairs(new_chunk, stairX, new_chunk.room.y, stairZ, 1);
 		new_chunk.generate_mesh();
 		
 		{
 			std::lock_guard<std::mutex> lock(chunk_mutex);
+			total_verts += new_chunk.vertices.size();
 			chunks.emplace_back(std::move(new_chunk));
+			
 		}
 	}
 }

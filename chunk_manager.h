@@ -30,6 +30,7 @@ public:
 	int last_z_chunk;
 	int frame_counter;
 	int update_interval;
+	int total_verts;
 
 	static constexpr size_t MAX_QUEUE_SIZE = 100;
 
