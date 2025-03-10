@@ -167,14 +167,16 @@ void ChunkManager::worker_loop() {
 		
 		Chunk new_chunk(chunk_coords.first, chunk_coords.second);
 		if (!rooms.empty()) {
-			new_chunk.generate_hallways(rooms.back());
+			//new_chunk.generate_hallways(rooms.back());
 		}
 		rooms.push_back(new_chunk.room);
+		Generators::generate_poolroom(new_chunk);
+		Generators::carve_room(new_chunk);
 		new_chunk.generate_mesh();
 		
 		{
 			std::lock_guard<std::mutex> lock(chunk_mutex);
-			chunks.emplace_back(new_chunk);
+			chunks.emplace_back(std::move(new_chunk));
 		}
 	}
 }

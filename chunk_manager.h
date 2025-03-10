@@ -8,6 +8,7 @@
 #include <condition_variable>
 #include "glad/glad.h"
 #include "chunk.h"
+#include "generators.h"
 #include <algorithm>
 #include <unordered_set>
 

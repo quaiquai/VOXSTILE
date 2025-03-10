@@ -1,6 +1,7 @@
 
 #include "Chunk.h"
 #include "noise.h"
+//#include "poolroom_generator.h"
 #include <iostream>
 
 
@@ -23,8 +24,8 @@ Chunk::Chunk(int worldx, int worldz) {
 	blocks.reserve(CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE);
 	// Fill the vector with the desired value
 	blocks.assign(CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE, STONE);
-	room = generate_room(0, 0);
-	carve_room(room);
+	//room = Generators::generate_room(CHUNK_SIZE);
+	//Generators::carve_room(room, CHUNK_SIZE, blocks);
 	prev_room = nullptr;
 	/*
 	for (int x = 0; x < CHUNK_SIZE; x++) {
@@ -178,6 +179,7 @@ void Chunk::generate_buffers() {
 	buffers_generated = true;
 }
 
+/*
 void Chunk::generate_hallways(Room prevroom) {
 	int x1 = prevroom.x + prevroom.width / 2, z1 = prevroom.z + prevroom.depth / 2;
 	int x2 = room.x + room.width / 2, z2 = room.z + room.depth / 2;
@@ -185,79 +187,7 @@ void Chunk::generate_hallways(Room prevroom) {
 	while (CHUNK_SIZE * x1 != CHUNK_SIZE *  x2) { blocks[x1*CHUNK_SIZE*CHUNK_SIZE + y * CHUNK_SIZE + z1] = GRASS; x1 += (CHUNK_SIZE *x1 < CHUNK_SIZE *x2) ? 1 : -1; }
 	while (CHUNK_SIZE *z1 != CHUNK_SIZE * z2) { blocks[x1*CHUNK_SIZE*CHUNK_SIZE + y * CHUNK_SIZE + z1] = GRASS; z1 += (CHUNK_SIZE *z1 < CHUNK_SIZE *z2) ? 1 : -1; }
 }
-
-Room Chunk::generate_room(int chunkX, int chunkZ) {
-	int maxWidth = (CHUNK_SIZE-1) / 2;
-	int maxDepth = (CHUNK_SIZE-1) / 2;
-	int maxHeight = (CHUNK_SIZE-1) / 2;
-
-	int width = 10 + rand() % (maxWidth);
-	int depth = 10 + rand() % (maxDepth);
-	int height = 10 + rand() % (maxHeight);
-
-	int x = rand() % (CHUNK_SIZE-1 - width);
-	int z = rand() % (CHUNK_SIZE-1 - depth);
-	int y = rand() % (CHUNK_SIZE-1 - height);
-	BlockType type = STONE;
-	return { x, y, z, width, height, depth, type };
-}
-
-void Chunk::carve_room(Room room) {
-	for (int x = 0; x < CHUNK_SIZE; ++x) {
-		for (int y = 0; y < CHUNK_SIZE; ++y) {
-			for (int z = 0; z < CHUNK_SIZE; ++z) {
-				// Calculate the 1D index in the chunk array
-				int index = x * CHUNK_SIZE * CHUNK_SIZE + y * CHUNK_SIZE + z;
-
-				// Check if the block is inside the room's boundaries
-				bool insideRoom = (x >= room.x && x < room.x + room.width &&
-					y >= room.y && y < room.y + room.height &&
-					z >= room.z && z < room.z + room.depth);
-
-				// Check if the block is on the immediate border of the room
-				bool onBorder = false;
-				if ((x == room.x - 1 || x == room.x + room.width) &&
-					y >= room.y && y < room.y + room.height &&
-					z >= room.z && z < room.z + room.depth) {
-					onBorder = true;
-				}
-				else if ((y == room.y - 1 || y == room.y + room.height) &&
-					x >= room.x && x < room.x + room.width &&
-					z >= room.z && z < room.z + room.depth) {
-					onBorder = true;
-				}
-				else if ((z == room.z - 1 || z == room.z + room.depth) &&
-					x >= room.x && x < room.x + room.width &&
-					y >= room.y && y < room.y + room.height) {
-					onBorder = true;
-				}
-
-				if (blocks[index] == GRASS) {
-					continue;
-				}
-
-				if (insideRoom) {
-					// Inside the room, set the block as inactive
-					blocks[index] = INACTIVE;
-				}
-				else if (onBorder) {
-					// Border blocks, set the block as stone
-					if ((z == 12 || z== 13 ||z==14) && y > room.height) {
-						blocks[index] = INACTIVE;
-					}
-				
-					
-				}
-				else {
-					// Outside the room and not bordering, set the block as inactive
-					blocks[index] = INACTIVE;
-				}
-			}
-		}
-	}
-		
-}
-
+*/
 
 float Chunk::generate_height(int x, int z) {
 	float n = Noise2D(x * 0.05, z * 0.05);
@@ -470,49 +400,49 @@ void Chunk::create_cube(int x, int y, int z) {
 														// Front face
 	tex_coords.insert(tex_coords.end(), {
 		0.0f, 0.0f, texLayer,  // bottom-left
-		0.5f, 0.0f, texLayer,  // bottom-right
-		0.5f, 0.5f, texLayer,  // top-right
-		0.0f, 0.5f, texLayer   // top-left
+		1.0f, 0.0f, texLayer,  // bottom-right
+		1.0f, 1.0f, texLayer,  // top-right
+		0.0f, 1.0f, texLayer   // top-left
 		});
 
 	// Back face
 	tex_coords.insert(tex_coords.end(), {
 		0.0f, 0.0f, texLayer,  // bottom-left
-		0.5f, 0.0f, texLayer,  // bottom-right
-		0.5f, 0.5f, texLayer,  // top-right
-		0.0f, 0.5f, texLayer   // top-left
+		1.0f, 0.0f, texLayer,  // bottom-right
+		1.0f, 1.0f, texLayer,  // top-right
+		0.0f, 1.0f, texLayer   // top-left
 		});
 
 	// Left face
 	tex_coords.insert(tex_coords.end(), {
 		0.0f, 0.0f, texLayer,  // bottom-left
-		0.5f, 0.0f, texLayer,  // bottom-right
-		0.5f, 0.5f, texLayer,  // top-right
-		0.0f, 0.5f, texLayer   // top-left
+		1.0f, 0.0f, texLayer,  // bottom-right
+		1.0f, 1.0f, texLayer,  // top-right
+		0.0f, 1.0f, texLayer   // top-left
 		});
 
 	// Right face
 	tex_coords.insert(tex_coords.end(), {
 		0.0f, 0.0f, texLayer,  // bottom-left
-		0.5f, 0.0f, texLayer,  // bottom-right
-		0.5f, 0.5f, texLayer,  // top-right
-		0.0f, 0.5f, texLayer   // top-left
+		1.0f, 0.0f, texLayer,  // bottom-right
+		1.0f, 1.0f, texLayer,  // top-right
+		0.0f, 1.0f, texLayer   // top-left
 		});
 
 	// Top face
 	tex_coords.insert(tex_coords.end(), {
 		0.0f, 0.0f, texLayer,  // bottom-left
-		0.5f, 0.0f, texLayer,  // bottom-right
-		0.5f, 0.5f, texLayer,  // top-right
-		0.0f, 0.5f, texLayer   // top-left
+		1.0f, 0.0f, texLayer,  // bottom-right
+		1.0f, 1.0f, texLayer,  // top-right
+		0.0f, 1.0f, texLayer   // top-left
 		});
 
 	// Bottom face
 	tex_coords.insert(tex_coords.end(), {
 		0.0f, 0.0f, texLayer,  // bottom-left
-		0.5f, 0.0f, texLayer,  // bottom-right
-		0.5f, 0.5f, texLayer,  // top-right
-		0.0f, 0.5f, texLayer   // top-left
+		1.0f, 0.0f, texLayer,  // bottom-right
+		1.0f, 1.0f, texLayer,  // top-right
+		0.0f, 1.0f, texLayer   // top-left
 		});
 
     // Normals for flat shading (6 faces, each with the same normal for 4 vertices)

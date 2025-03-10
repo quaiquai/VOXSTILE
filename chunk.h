@@ -7,11 +7,11 @@
 #include "glad/glad.h"
 #include <iostream>
 
-
 struct Room {
 	int x, y, z, width, height, depth;
 	BlockType type;
 };
+
 
 class Chunk {
 
@@ -28,9 +28,7 @@ public:
 	void create_cube(int x, int y, int z);
 	void generate_mesh();
 
-	Room generate_room(int chunkX, int chunkY);
-	void carve_room(Room room);
-	void generate_hallways(Room room);
+	//void generate_hallways(Room room);
 
 	void create_mesh();
 	void generate_buffers();
