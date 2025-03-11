@@ -24,7 +24,6 @@ Chunk::Chunk(int worldx, int worldz) {
 	blocks.reserve(CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE);
 	// Fill the vector with the desired value
 	blocks.assign(CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE, STONE);
-	prev_room = nullptr;
 	/*
 	for (int x = 0; x < CHUNK_SIZE; x++) {
 		for (int z = 0; z < CHUNK_SIZE; z++) {
@@ -66,6 +65,8 @@ Chunk::Chunk(const Chunk &c) {
 	buffers_initialized = c.buffers_initialized;
 	buffers_generated = c.buffers_generated;
 	blocks_generated = c.blocks_generated;
+	prev_room = c.prev_room;
+	room = c.room;
 	blocks = c.blocks;
 	vertices = c.vertices;
 	colors = c.colors;
@@ -96,6 +97,8 @@ Chunk::Chunk(Chunk&& other) noexcept
 	buffers_generated(other.buffers_generated),
 	blocks_generated(other.blocks_generated),
 	block_number(other.block_number),
+	prev_room(other.prev_room),
+	room(other.room),
 	chunk_id(other.chunk_id),
 	vertices(std::move(other.vertices)),
 	tex_coords(std::move(other.tex_coords)),
@@ -140,6 +143,8 @@ Chunk& Chunk::operator=(Chunk&& other) noexcept {
 		buffers_initialized = other.buffers_initialized;
 		buffers_generated = other.buffers_generated;
 		blocks_generated = other.blocks_generated;
+		prev_room = other.prev_room;
+		room = other.room;
 	
 
 								   // Move STL containers

@@ -168,20 +168,20 @@ void ChunkManager::worker_loop() {
 		
 		
 		Chunk new_chunk(chunk_coords.first, chunk_coords.second);
-		if (!rooms.empty()) {
-			//new_chunk.generate_hallways(rooms.back());
-		}
-		rooms.push_back(new_chunk.room);
+		
 		Generators::generate_poolroom(new_chunk);
 		Generators::carve_room(new_chunk);
-		//int stairX = new_chunk.room.x + rand() % (new_chunk.room.width - 5);
-		//int stairZ = new_chunk.room.z + rand() % (new_chunk.room.depth - 5);
-		//Generators::generate_stairs(new_chunk, stairX, new_chunk.room.y, stairZ, 1);
 		new_chunk.generate_mesh();
+
+		rooms.push_back(new_chunk.room);
 		
 		{
 			std::lock_guard<std::mutex> lock(chunk_mutex);
 			total_verts += new_chunk.vertices.size();
+			//if chunk list isnt empty set the last chunk's next room to the newly created chunks room
+			if (!chunks.empty()) {
+				chunks.back().prev_room = rooms.back(); //this needs to be changed to the variable next_room
+			}
 			chunks.emplace_back(std::move(new_chunk));
 			
 		}

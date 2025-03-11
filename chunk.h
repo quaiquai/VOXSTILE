@@ -45,7 +45,7 @@ public:
 	//Block ***m_pBlocks;
 
 	Room room;
-	Room* prev_room;
+	Room prev_room;
 	int chunk_id;
 	int chunk_world_xposition;
 	int chunk_world_zposition;

@@ -6,8 +6,8 @@
 class Portal {
 public:
 
-	GLuint portal_fb;
-	GLuint portal_texture;
+	GLuint fbo;
+	GLuint texture;
 
 	Portal() = default;
 	~Portal() = default;
