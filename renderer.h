@@ -11,5 +11,7 @@ public:
 	void renderWireframes();
 	void enableDepthTesting();
 	void initChunkBuffers(ChunkManager &chunks);
-	void init_chunk_buffers(Chunk &chunk);
+	//void render_portal_view(const Portal &portal);
+	template<typename T>
+	void init_frameBuffer(T &obj);
 };
