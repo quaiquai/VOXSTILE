@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./images/new-game-logo-small.png" width="50%" height="50%" />
+  <img src="./images/new-game-logo-small-no-bg-stroke.png" width="80%" height="80%" />
 </p>
 
 ![Culled voxels in chunk](./images/awesome_view.PNG)
