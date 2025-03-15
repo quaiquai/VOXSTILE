@@ -14,6 +14,7 @@ public:
 	glm::mat4 view_matrix;
 	glm::mat4 projection_matrix;
 	glm::vec3 camera_position;
+	glm::mat4 model_matrix;
 
 	Portal();
 	void draw_portal();

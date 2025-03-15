@@ -12,7 +12,8 @@ Portal::Portal() {
 	};
 
 	position = { 0.0, 0.0, 0.0 };
-	camera_position = { 17.0, 10.0, 14.0 };
+	model_matrix = glm::mat4(1.0);
+	camera_position = { 10.0, 10.0, 10.0 };
 
 	// Define the indices for the quad
 	unsigned int indices[] = {
@@ -50,10 +51,10 @@ Portal::Portal() {
 
 }
 
-void Portal::setup_camera(Shader &portal_shader, glm::vec3 camera_position, glm::vec3 camera_front) {
+void Portal::setup_camera(Shader &portal_shader, glm::vec3 cp, glm::vec3 camera_front) {
 
 	// Set up the view matrix
-	view_matrix = glm::lookAt(Portal::camera_position, Portal::camera_position + glm::vec3(0.0, 0.0, -1.0), glm::vec3(0.0f, 1.0f, 0.0f));
+	view_matrix = glm::lookAt(camera_position - cp, (camera_position - cp) + glm::vec3(0.0, 0.0, -1.0), glm::vec3(0.0f, 1.0f, 0.0f));
 
 	// Set up the projection matrix (perspective projection)
 	projection_matrix = glm::perspective(glm::radians(90.0f), 1920.0f / 1080.0f, 0.1f, 100.0f);
