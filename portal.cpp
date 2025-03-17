@@ -53,7 +53,11 @@ Portal::Portal() {
 
 void Portal::setup_camera(Shader &portal_shader, glm::vec3 cp, glm::vec3 camera_front) {
 
+	//cp = to the relative positon of the main camera to the main portal (entrance portal)
+
 	// Set up the view matrix
+	//using the relative position of the main portal to the entrance of it we adjust the exit portals camera to the same position by adding the
+	// relative position to the camera positon. this kinda works for now because we dont have a set exit portal positon.
 	view_matrix = glm::lookAt(camera_position + cp, (camera_position + cp) + camera_front, glm::vec3(0.0f, 1.0f, 0.0f));
 
 	// Set up the projection matrix (perspective projection)
