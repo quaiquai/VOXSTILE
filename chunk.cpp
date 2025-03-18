@@ -100,7 +100,7 @@ Chunk::Chunk(Chunk&& other) noexcept
 	block_number(other.block_number),
 	prev_room(other.prev_room),
 	room(other.room),
-	portal(other.portal),
+	//portal(other.portal),
 	chunk_id(other.chunk_id),
 	vertices(std::move(other.vertices)),
 	tex_coords(std::move(other.tex_coords)),
@@ -109,6 +109,7 @@ Chunk::Chunk(Chunk&& other) noexcept
 	indices(std::move(other.indices)),
 	tangents(std::move(other.tangents)),
 	bitangents(std::move(other.bitangents)),
+	portal(std::move(other.portal)),
 	blocks(std::move(other.blocks)){
 
 	
@@ -147,7 +148,7 @@ Chunk& Chunk::operator=(Chunk&& other) noexcept {
 		blocks_generated = other.blocks_generated;
 		prev_room = other.prev_room;
 		room = other.room;
-		portal = other.portal;
+		portal = std::move(other.portal);
 	
 
 								   // Move STL containers
@@ -181,6 +182,7 @@ void Chunk::generate_buffers() {
 	glGenBuffers(1, &texture_buffer);
 	glGenBuffers(1, &tangent_buffer);
 	glGenBuffers(1, &bitangent_buffer);
+	portal.setup_framebuffer();
 	//glGenTextures(1, &textureID);
 	buffers_generated = true;
 }
@@ -582,6 +584,19 @@ void Chunk::create_cube(int x, int y, int z) {
 
 
 	++block_number;
+}
+
+void Chunk::configure_portal(Shader &shader, glm::vec3 camera_pos, glm::vec3 camera_front) {
+
+	//decide where the entrance and exit portal is base on room and next room positions
+	portal.position = { room.chunk_position_x + ((room.x + room.width) / 2), 15, room.chunk_position_z + ((room.z + room.depth) / 2) };
+	portal.exit_position = { prev_room.chunk_position_x + ((prev_room.x + prev_room.width) / 2), prev_room.height / 2, prev_room.chunk_position_z + ((prev_room.z + prev_room.depth) / 2) };
+
+	//move the portal to position in chunk
+	portal.model_matrix = glm::translate(glm::mat4(1.0), glm::vec3(portal.position[0], portal.position[1],portal.position[2]));
+	glm::vec3 relative_camera_pos = camera_pos - portal.position;
+	portal.setup_camera(shader, relative_camera_pos, camera_front);
+
 }
 
 

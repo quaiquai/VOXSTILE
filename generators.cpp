@@ -15,7 +15,9 @@ void Generators::generate_poolroom(Chunk &chunk) {
 	int z = rand() % (chunk.CHUNK_SIZE - 1 - depth);
 	int y = rand() % (chunk.CHUNK_SIZE - 1 - height);
 	BlockType type = STONE;
-	chunk.room = { x, y, z, width, height, depth, type };
+
+	//chunk.absolute_positionX, chunk.absolute_positionZ are used for calculating portal position in room
+	chunk.room = { x, y, z, width, height, depth, chunk.absolute_positionX, chunk.absolute_positionZ, type};
 }
 
 void Generators::generate_stairs(Chunk &chunk, int startX, int startY, int startZ, int direction) {

@@ -10,6 +10,7 @@
 
 struct Room {
 	int x, y, z, width, height, depth;
+	int chunk_position_x, chunk_position_z;
 	BlockType type;
 };
 
@@ -38,6 +39,8 @@ public:
 		const glm::vec3& v0, const glm::vec3& v1, const glm::vec3& v2,
 		const glm::vec2& uv0, const glm::vec2& uv1, const glm::vec2& uv2,
 		glm::vec3& tangent, glm::vec3& bitangent);
+
+	void configure_portal(Shader &shader, glm::vec3 camera_pos, glm::vec3 camera_front);
 
 	static const int CHUNK_SIZE;
 	static const int NUMBER_OF_CUBE_VERTS;

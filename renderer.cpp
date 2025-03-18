@@ -127,7 +127,7 @@ void Renderer::initChunkBuffers(ChunkManager &chunks) {
 			glBindBuffer(GL_ARRAY_BUFFER, 0);
 			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
-			init_chunk_portal_buffers(chunks.chunks[i]);
+			//init_chunk_portal_buffers(chunks.chunks[i]);
 			chunks.chunks[i].buffers_initialized = true;
 		}
 	}

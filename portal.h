@@ -37,6 +37,7 @@ public:
 	Portal();
 	void draw_portal();
 	void setup_camera(Shader &portal_shader, glm::vec3 camera_position, glm::vec3 camera_front);
+	void setup_framebuffer();
 	void renderSceneFromPortalPerspective();
 	void drawQuad();
 	~Portal() = default;

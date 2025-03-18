@@ -10,4 +10,5 @@ uniform sampler2D renderedTexture;
 void main() {
 	vec2 uu = vec2(gl_FragCoord.xy / vec2(1920, 1080));
 	color = texture(renderedTexture, uu).xyz;
+	//color = vec3(1.0);
 }

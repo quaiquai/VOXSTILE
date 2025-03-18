@@ -146,6 +146,11 @@ void ChunkManager::update_visible_chunks(glm::vec3 position) {
 	
 }
 
+/*
+void ChunkManager::configure_chunk_portal() {
+
+}
+*/
 
 
 void ChunkManager::worker_loop() {
@@ -181,6 +186,7 @@ void ChunkManager::worker_loop() {
 			//if chunk list isnt empty set the last chunk's next room to the newly created chunks room
 			if (!chunks.empty()) {
 				chunks.back().prev_room = rooms.back(); //this needs to be changed to the variable next_room
+				//chunks.back().configure_portal();
 			}
 			chunks.emplace_back(std::move(new_chunk));
 			

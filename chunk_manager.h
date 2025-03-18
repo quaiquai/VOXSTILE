@@ -59,12 +59,17 @@ public:
 	void generate_new_chunk(Chunk &chunk);
 	void generate_chunk_buffers();
 	void clear_unload_list();
+
 	void add_pending_chunks();
 	void remove_unload_chunks();
 	void fill_chunks();
 	void generate_chunks();
 	void render_chunks();
+
+	//void configure_chunk_portals();
+
 	void worker_loop(); // Background thread function
+
 	
 };
 
