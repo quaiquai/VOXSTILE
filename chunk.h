@@ -6,6 +6,7 @@
 #include <array>
 #include "glad/glad.h"
 #include <iostream>
+#include "portal.h"
 
 struct Room {
 	int x, y, z, width, height, depth;
@@ -46,6 +47,7 @@ public:
 
 	Room room;
 	Room prev_room;
+	Portal portal;
 	int chunk_id;
 	int chunk_world_xposition;
 	int chunk_world_zposition;

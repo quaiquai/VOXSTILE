@@ -174,4 +174,5 @@ void Generators::carve_room(Chunk &chunk) {
 	int overhangDepth = 3 + rand() % 5; // Random overhang depth
 	generate_overhang(chunk, overhangX, roomY + roomHeight - 2, overhangZ, overhangWidth, overhangDepth);
 
+
 }

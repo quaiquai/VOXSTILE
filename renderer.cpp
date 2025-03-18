@@ -8,6 +8,38 @@ void Renderer::enableDepthTesting() {
 	glEnable(GL_DEPTH_TEST);
 }
 
+void Renderer::init_chunk_portal_buffers(Chunk &chunk) {
+
+	// Create the VAO, VBO, and EBO
+	glGenVertexArrays(1, &chunk.portal.vao);
+	glGenBuffers(1, &chunk.portal.vbo);
+	glGenBuffers(1, &chunk.portal.ebo);
+
+	// Bind the VAO
+	glBindVertexArray(chunk.portal.vao);
+
+	// Bind and upload the VBO
+	glBindBuffer(GL_ARRAY_BUFFER, chunk.portal.vbo);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(chunk.portal.vertices), chunk.portal.vertices, GL_STATIC_DRAW);
+
+	// Bind and upload the EBO
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, chunk.portal.ebo);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(chunk.portal.indices), chunk.portal.indices, GL_STATIC_DRAW);
+
+	// Set up the vertex attributes
+	// Position attribute
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(0);
+
+	// Texture coordinate attribute
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+	glEnableVertexAttribArray(1);
+
+	// Unbind the VAO
+	glBindVertexArray(0);
+}
+
+
 void Renderer::initChunkBuffers(ChunkManager &chunks) {
 	std::lock_guard<std::mutex> lock(chunks.chunk_mutex); // Lock for thread safety
 	for (int i = 0; i < chunks.chunks.size(); ++i) {

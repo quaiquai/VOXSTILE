@@ -3,24 +3,13 @@
 
 Portal::Portal() {
 
-	float vertices[] = {
-		// Positions          // Texture Coords
-		-0.5f, -0.5f, 0.0f,  0.0f, 0.0f, // Bottom-left
-		0.5f, -0.5f, 0.0f,  1.0f, 0.0f, // Bottom-right
-		0.5f,  0.5f, 0.0f,  1.0f, 1.0f, // Top-right
-		-0.5f,  0.5f, 0.0f,  0.0f, 1.0f  // Top-left
-	};
+	
 
 	position = { 0.0, 0.0, 0.0 };
 	model_matrix = glm::mat4(1.0);
 	camera_position = { 14.0, 10.0, 10.0 };
 
-	// Define the indices for the quad
-	unsigned int indices[] = {
-		0, 1, 2, // First triangle
-		2, 3, 0  // Second triangle
-	};
-
+	
 	// Create the VAO, VBO, and EBO
 	glGenVertexArrays(1, &vao);
 	glGenBuffers(1, &vbo);
@@ -50,6 +39,7 @@ Portal::Portal() {
 	glBindVertexArray(0);
 
 }
+
 
 void Portal::setup_camera(Shader &portal_shader, glm::vec3 cp, glm::vec3 camera_front) {
 

@@ -67,6 +67,7 @@ Chunk::Chunk(const Chunk &c) {
 	blocks_generated = c.blocks_generated;
 	prev_room = c.prev_room;
 	room = c.room;
+	portal = c.portal;
 	blocks = c.blocks;
 	vertices = c.vertices;
 	colors = c.colors;
@@ -99,6 +100,7 @@ Chunk::Chunk(Chunk&& other) noexcept
 	block_number(other.block_number),
 	prev_room(other.prev_room),
 	room(other.room),
+	portal(other.portal),
 	chunk_id(other.chunk_id),
 	vertices(std::move(other.vertices)),
 	tex_coords(std::move(other.tex_coords)),
@@ -145,6 +147,7 @@ Chunk& Chunk::operator=(Chunk&& other) noexcept {
 		blocks_generated = other.blocks_generated;
 		prev_room = other.prev_room;
 		room = other.room;
+		portal = other.portal;
 	
 
 								   // Move STL containers
