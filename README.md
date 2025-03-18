@@ -9,7 +9,12 @@
 Voxstile is a voxel-based horror game engine built in OpenGL, designed to generate infinite, procedurally generated Backrooms-style poolroom structures connected through non-euclidean-like portals. The game features realistic lighting, dynamic destruction, and an eerie atmosphere to immerse players in a terrifying experience.
 
 -------------------
-![Culled voxels in chunk](./images/first-portals.gif)
+<p align="center">
+  <img src="./images/first-portals.gif" width="60%" height="60%" />
+</p>
+
+------------------
+
 ![Culled voxels in chunk](./images/awesome_view.PNG)
 ![Culled voxels in chunk](./images/spec_ao_angle.PNG)
 ![Culled voxels in chunk](./images/wall_spec.PNG)
