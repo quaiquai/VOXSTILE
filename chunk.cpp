@@ -589,8 +589,8 @@ void Chunk::create_cube(int x, int y, int z) {
 void Chunk::configure_portal(Shader &shader, glm::vec3 camera_pos, glm::vec3 camera_front) {
 
 	//decide where the entrance and exit portal is base on room and next room positions
-	portal.position = { room.chunk_position_x + ((room.x + room.width) / 2), room.y + 0.5, room.chunk_position_z + ((room.z + room.depth) / 2) };
-	portal.exit_position = { prev_room.chunk_position_x + ((prev_room.x + prev_room.width) / 2), 15, prev_room.chunk_position_z + ((prev_room.z + prev_room.depth) / 2) };
+	portal.position = { room.chunk_position_x + ((room.x + room.width/2)), room.y + 0.5, room.chunk_position_z + ((room.z + room.depth/2)) };
+	portal.exit_position = { prev_room.chunk_position_x + ((prev_room.x + prev_room.width/2)), prev_room.y + 0.5, prev_room.chunk_position_z + ((prev_room.z + prev_room.depth/2)) };
 
 	//move the portal to position in chunk
 	portal.model_matrix = glm::translate(glm::mat4(1.0), glm::vec3(portal.position[0], portal.position[1],portal.position[2]));
