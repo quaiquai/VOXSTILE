@@ -20,10 +20,13 @@ uniform vec3 lightColor;
 uniform float lowBias;
 uniform float highBias;
 uniform float sampleTexel;
+uniform vec3 portalLightPosition;
+uniform float averagePortalBrightness;
 
 
 uniform sampler2DArray texture3D;
 uniform sampler2D shadowMap;
+uniform sampler2D portal;
 
 vec2 poissonDisk[16] = vec2[](
 	vec2(-0.94201624, -0.39906216),
@@ -96,14 +99,14 @@ void main(){
 
 	float distance = length(fragPos - lightPos);
 	// Compute fake attenuation
-	float distanceFactor = clamp(1.0 / (1.0 + 0.002 * distance + 0.001 * distance * distance), 0.0, 1.0);	
+	float distanceFactor = clamp(1.0 / (1.0 + 0.002 * distance + 0.0002 * distance * distance), 0.0, 1.0);	
 
 	// Sample the roughness map (grayscale, so we take the red channel)
 	float roughness = texture(texture3D, vec3(TexCoords.rg, 2.0)).r;
-	float specularStrength = step(0.01, roughness) * 10;
+	float specularStrength = step(0.01, roughness) * 1;
 	
 	float ambientOcclusion = texture(texture3D, vec3(TexCoords.rg, 3.0)).r; // AO values are in [0,1]
-	vec3 ambientColor = vec3(0.4, 0.3, 0.2); // Soft, neutral ambient light										 
+	vec3 ambientColor = vec3(0.3, 0.2, 0.1); // Soft yellow, ambient light										 
 	vec3 ambient = ambientColor * ambientOcclusion;// Apply AO to ambient and diffuse light
 
 	//vec3 norm = normalize(v_normal);
@@ -114,17 +117,33 @@ void main(){
 	vec3 lightDir = normalize(tangentLightDirection);
 	vec3 viewDir = normalize(tangentViewPos - tangentFragPos);
 	vec3 reflectDir = reflect(-lightDir, norm); //negate for incoming light
-	float specularCoef = pow(max(dot(viewDir, reflectDir), 0.0), 256);
+	float specularCoef = pow(max(dot(viewDir, reflectDir), 0.1), 32);
 	vec3 specular = specularStrength * specularCoef * lightColor;
 	float diffCoef = max(dot(norm, lightDir), 0.0);
-	vec3 diffuse = diffCoef * vec3(1.0) * 1.0;
-	diffuse = diffuse;
+	vec3 diffuse = diffCoef * vec3(1.0, 1.0, 1.0) * 1.0;
+	//diffuse = diffuse;
 	// calculate shadow
 	float shadow = ShadowCalculation(FragPosLightSpace);
+
+
+	///////
+	//portal light
+	///////
+	vec3 portalLightColor = vec3(texture(portal, vec2(0.5, 0.1)).rgb);  // Example color
+	float portalLightIntensity = averagePortalBrightness * 5.0f;  // Scale it up
+	mat3 TBN = transpose(mat3(T, B, N));
+
+	vec3 pointLightPosition = TBN * portalLightPosition;
+	float portaldistance = length(pointLightPosition - tangentFragPos);
+	float portalattenuation = 1.0 / (1.0 + 0.09 * portaldistance + 0.032 * portaldistance * portaldistance);
+	vec3 pointLightDir = normalize(pointLightPosition - tangentFragPos);
+	vec3 pointLightReflect = reflect(-lightDir, norm);
+	vec3 pointLightDiffuse = max(dot(norm, pointLightDir), 0.0) * portalLightColor * portalLightIntensity * portalattenuation;
+
 	
-	diffuse *= (1.0 - shadow);
+	diffuse *= (1.0 - shadow*0.8);
 	specular *= (1.0 - shadow);
-	color = vec4((ambient + diffuse + specular) * distanceFactor * texture(texture3D, TexCoords).rgb, 1.0);
+	color = vec4(clamp((ambient + diffuse + specular), 0.0, 0.9) * texture(texture3D, TexCoords).rgb, 1.0);
 
 	//color = vec4(color, 1.0);
 	//color = vec4((ambient + (1.2 - shadow) * (diffuse + specular)) * texture(texture3D, TexCoords).rgb, 1.0);

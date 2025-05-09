@@ -267,6 +267,62 @@ void ChunkManager::render_chunks() {
 
 }
 
+void ChunkManager::render_chunks(int index) {
+
+	glEnable(GL_DEPTH_TEST);  // Ensure depth testing is on
+							  //glEnable(GL_CULL_FACE);   // Cull back faces for performance
+							  //glCullFace(GL_BACK);
+	std::lock_guard<std::mutex> lock(chunk_mutex);
+	for (int i = 0; i < ChunkManager::chunks.size(); ++i) {
+
+		if (!chunks[i].buffers_initialized) {
+			std::cerr << "Warning: Chunk at (" << chunks[i].chunk_world_xposition
+				<< ", " << chunks[i].chunk_world_zposition
+				<< ") has uninitialized buffers!" << std::endl;
+			continue;
+		}
+
+		if (chunks[i].indices.empty()) {
+			std::cerr << "Warning: Chunk at (" << chunks[i].chunk_world_xposition
+				<< ", " << chunks[i].chunk_world_zposition
+				<< ") has no indices!" << std::endl;
+			continue;
+		}
+
+		if (chunks[i].normals.empty()) {
+			std::cerr << "Warning: Chunk at (" << chunks[i].chunk_world_xposition
+				<< ", " << chunks[i].chunk_world_zposition
+				<< ") has no normals!" << std::endl;
+			continue;
+		}
+
+		if (chunks[i].vertices.empty()) {
+			std::cerr << "Warning: Chunk at (" << chunks[i].chunk_world_xposition
+				<< ", " << chunks[i].chunk_world_zposition
+				<< ") has no vertices!" << std::endl;
+			continue;
+		}
+
+		if (chunks[i].tangents.empty()) {
+			std::cerr << "Warning: Chunk at (" << chunks[i].chunk_world_xposition
+				<< ", " << chunks[i].chunk_world_zposition
+				<< ") has no tangents!" << std::endl;
+			continue;
+		}
+
+		if (chunks[i].buffers_generated && chunks[i].buffers_initialized && !chunks[i].indices.empty()) {
+			glBindVertexArray(chunks[i].VertexArrayID);
+			glDrawElements(GL_TRIANGLES, chunks[i].indices.size(), GL_UNSIGNED_INT, 0);
+		}
+		// Starting from vertex 0; 3 vertices total -> 1 triangle
+
+	}
+
+	//glBindVertexArray(chunks[0].VertexArrayID);
+	//glDrawElements(GL_TRIANGLES, chunks[0].indices.size(), GL_UNSIGNED_INT, 0); // Starting from vertex 0; 3 vertices total -> 1 triangle
+
+}
+
 ChunkManager::~ChunkManager() {
 	stop_thread = true;
 	chunk_cv.notify_one(); // Wake up thread to exit

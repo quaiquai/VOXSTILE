@@ -123,7 +123,11 @@ void Generators::carve_room(Chunk &chunk) {
 				}
 				else if (onBorder) {
 					// Border blocks, set the block as stone
-					if ((z == 12 || z == 13 || z == 14) && y > chunk.room.height) {
+					//if ((z == 12 || z == 13 || z == 14) && y > chunk.room.height) {
+						//chunk.blocks[index] = INACTIVE;
+					//}
+
+					if (y > chunk.room.height) {
 						chunk.blocks[index] = INACTIVE;
 					}
 

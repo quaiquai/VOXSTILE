@@ -65,6 +65,7 @@ public:
 	void fill_chunks();
 	void generate_chunks();
 	void render_chunks();
+	void render_chunks(int index);
 
 	//void configure_chunk_portals();
 
